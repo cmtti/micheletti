@@ -30,8 +30,8 @@ const FEATURES = [
   },
   {
     icon: LineChart,
-    title: "Custos e prazos",
-    text: "Custo estimado x realizado, percentual de andamento e alerta automático de atraso.",
+    title: "Valores e prazos",
+    text: "Valor do serviço x valor recebido, percentual de andamento e alerta automático de atraso.",
   },
   {
     icon: ShieldCheck,

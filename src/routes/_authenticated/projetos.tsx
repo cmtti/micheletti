@@ -378,7 +378,7 @@ function ProjetosPage() {
               <TableHead>Tipo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Cards</TableHead>
-              <TableHead>Custo est. / real</TableHead>
+              <TableHead>Valor serviço / recebido</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="text-right print:hidden">Ações</TableHead>
             </TableRow>

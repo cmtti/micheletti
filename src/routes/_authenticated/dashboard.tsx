@@ -101,9 +101,9 @@ function Dashboard() {
           tone="danger"
         />
         <Kpi
-          label="Custo estimado x realizado"
+          label="Valor do serviço x recebido"
           value={brl(real)}
-          hint={`Estimado ${brl(estimado)}`}
+          hint={`Valor do serviço ${brl(estimado)}`}
           icon={CheckCircle2}
           tone={real > estimado ? "danger" : "success"}
         />
