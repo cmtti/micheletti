@@ -20,7 +20,6 @@ import {
   PRIORIDADE_LABEL,
   brl,
   dataBR,
-  deleteRow,
   fetchCards,
   fetchEtapas,
   fetchProfiles,
@@ -272,7 +271,6 @@ function KanbanPage() {
         card={aberto ? (cards.find((c) => c.id === aberto.id) ?? null) : null}
         onOpenChange={(o) => !o && setAberto(null)}
       />
-      <span className="hidden">{deleteRow ? "" : ""}</span>
     </AppShell>
   );
 }
