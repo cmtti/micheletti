@@ -69,7 +69,7 @@ export interface AnexoVersao {
   nome_arquivo: string;
   revisao: number;
   status: AnexoStatus;
-  link?: string | null;
+  storage_path: string | null;
   autor_id: string | null;
   created_at: string;
 }
