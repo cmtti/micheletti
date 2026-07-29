@@ -258,7 +258,7 @@ export function CardDetailDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Custo estimado ({brl(Number(card.custo_estimado))})</Label>
+                <Label>Valor do serviço ({brl(Number(card.custo_estimado))})</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -267,7 +267,7 @@ export function CardDetailDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Custo real ({brl(Number(card.custo_real))})</Label>
+                <Label>Valor recebido ({brl(Number(card.custo_real))})</Label>
                 <Input
                   type="number"
                   step="0.01"
