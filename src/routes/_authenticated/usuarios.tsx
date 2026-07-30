@@ -37,16 +37,27 @@ function UsuariosPage() {
 
   async function alternar(userId: string, role: AppRole, marcar: boolean) {
     try {
+      if (!marcar && role === "admin") {
+        const admins = roles.filter((r) => r.role === "admin");
+        if (admins.length <= 1) {
+          toast.error("É necessário manter ao menos um administrador no sistema.");
+          return;
+        }
+      }
       if (marcar) await insertRow("user_roles", { user_id: userId, role });
       else {
         const atual = roles.find((r) => r.user_id === userId && r.role === role);
         if (atual) await deleteRow("user_roles", atual.id);
       }
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      await qc.invalidateQueries({ queryKey: ["roles"] });
+      toast.success(
+        marcar ? `Perfil ${ROLE_LABEL[role]} atribuído.` : `Perfil ${ROLE_LABEL[role]} removido.`,
+      );
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
+
 
   return (
     <AppShell
