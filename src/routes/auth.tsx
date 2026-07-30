@@ -110,7 +110,14 @@ function AuthPage() {
               <Button className="w-full" disabled={loading}>
                 Entrar
               </Button>
+              <Link
+                to="/esqueci-senha"
+                className="block text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                Esqueci minha senha
+              </Link>
             </form>
+
           </TabsContent>
 
           <TabsContent value="criar">
