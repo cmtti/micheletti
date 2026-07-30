@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,7 +110,14 @@ function AuthPage() {
               <Button className="w-full" disabled={loading}>
                 Entrar
               </Button>
+              <Link
+                to="/esqueci-senha"
+                className="block text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                Esqueci minha senha
+              </Link>
             </form>
+
           </TabsContent>
 
           <TabsContent value="criar">

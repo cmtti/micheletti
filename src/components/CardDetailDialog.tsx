@@ -36,6 +36,7 @@ import {
   fetchComentarios,
   fetchEtapas,
   fetchProfiles,
+  fetchProjetos,
   insertRow,
   logAuditoria,
   situacaoPrazo,
@@ -60,6 +61,7 @@ export function CardDetailDialog({
 
   const { data: etapas = [] } = useQuery({ queryKey: ["etapas"], queryFn: fetchEtapas });
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
+  const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
   const { data: comentarios = [] } = useQuery({
     queryKey: ["comentarios", cardId],
     queryFn: () => fetchComentarios(cardId),
@@ -161,6 +163,24 @@ export function CardDetailDialog({
 
           <TabsContent value="detalhes" className="space-y-4 pt-4">
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Projeto</Label>
+                <Select
+                  value={card.projeto_id ?? undefined}
+                  onValueChange={(v) => v !== card.projeto_id && field({ projeto_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projetos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label>Etapa</Label>
                 <Select
