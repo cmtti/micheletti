@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   nome: string;
   email: string | null;
+  aprovado: boolean;
 }
 export interface UserRole {
   id: string;
@@ -145,7 +146,7 @@ export const ANEXO_STATUS_LABEL: Record<AnexoStatus, string> = {
 };
 
 export const fetchProfiles = () =>
-  run<Profile[]>(db.from("profiles").select("id, nome, email").order("nome"));
+  run<Profile[]>(db.from("profiles").select("id, nome, email, aprovado").order("nome"));
 export const fetchRoles = () => run<UserRole[]>(db.from("user_roles").select("*"));
 export const fetchClientes = () => run<Cliente[]>(db.from("clientes").select("*").order("nome"));
 export const fetchEtapas = () =>

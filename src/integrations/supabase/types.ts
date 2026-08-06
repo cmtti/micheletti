@@ -288,18 +288,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          aprovado: boolean
           created_at: string
           email: string | null
           id: string
           nome: string
         }
         Insert: {
+          aprovado?: boolean
           created_at?: string
           email?: string | null
           id: string
           nome?: string
         }
         Update: {
+          aprovado?: boolean
           created_at?: string
           email?: string | null
           id?: string

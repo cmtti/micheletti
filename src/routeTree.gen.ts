@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AguardandoAprovacaoRouteImport } from './routes/aguardando-aprovacao'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
@@ -39,6 +40,11 @@ const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AguardandoAprovacaoRoute = AguardandoAprovacaoRouteImport.update({
+  id: '/aguardando-aprovacao',
+  path: '/aguardando-aprovacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -78,6 +84,7 @@ const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aguardando-aprovacao': typeof AguardandoAprovacaoRoute
   '/auth': typeof AuthRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aguardando-aprovacao': typeof AguardandoAprovacaoRoute
   '/auth': typeof AuthRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/aguardando-aprovacao': typeof AguardandoAprovacaoRoute
   '/auth': typeof AuthRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/aguardando-aprovacao'
     | '/auth'
     | '/esqueci-senha'
     | '/redefinir-senha'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/aguardando-aprovacao'
     | '/auth'
     | '/esqueci-senha'
     | '/redefinir-senha'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/aguardando-aprovacao'
     | '/auth'
     | '/esqueci-senha'
     | '/redefinir-senha'
@@ -157,6 +169,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AguardandoAprovacaoRoute: typeof AguardandoAprovacaoRoute
   AuthRoute: typeof AuthRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aguardando-aprovacao': {
+      id: '/aguardando-aprovacao'
+      path: '/aguardando-aprovacao'
+      fullPath: '/aguardando-aprovacao'
+      preLoaderRoute: typeof AguardandoAprovacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -267,6 +287,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AguardandoAprovacaoRoute: AguardandoAprovacaoRoute,
   AuthRoute: AuthRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,

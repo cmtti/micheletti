@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.protege_aprovacao() FROM PUBLIC, anon, authenticated;

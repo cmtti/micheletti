@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import {
   fetchProfiles,
   fetchRoles,
   insertRow,
+  updateRow,
   type AppRole,
 } from "@/lib/api";
 
@@ -58,14 +60,33 @@ function UsuariosPage() {
     }
   }
 
+  async function alternarAcesso(userId: string, aprovar: boolean) {
+    try {
+      if (!aprovar && userId === user?.id) {
+        toast.error("Você não pode revogar o próprio acesso.");
+        return;
+      }
+      await updateRow("profiles", userId, { aprovado: aprovar });
+      await qc.invalidateQueries({ queryKey: ["profiles"] });
+      toast.success(aprovar ? "Acesso liberado." : "Acesso revogado.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
+  const pendentes = profiles.filter((p) => !p.aprovado);
 
   return (
     <AppShell
       title="Usuários e permissões"
-      description="Defina os perfis de acesso da equipe de engenharia"
+      description="Aprove novos acessos e defina os perfis da equipe de engenharia"
       actions={
         !isAdmin ? (
           <Badge variant="secondary">Somente administradores podem alterar perfis</Badge>
+        ) : pendentes.length > 0 ? (
+          <Badge>
+            {pendentes.length} aguardando aprovação
+          </Badge>
         ) : null
       }
     >
@@ -75,6 +96,7 @@ function UsuariosPage() {
             <TableRow>
               <TableHead>Usuário</TableHead>
               <TableHead>E-mail</TableHead>
+              <TableHead>Acesso liberado</TableHead>
               {ROLES.map((r) => (
                 <TableHead key={r}>{ROLE_LABEL[r]}</TableHead>
               ))}
@@ -83,8 +105,22 @@ function UsuariosPage() {
           <TableBody>
             {profiles.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.nome || "—"}</TableCell>
+                <TableCell className="font-medium">
+                  {p.nome || "—"}
+                  {!p.aprovado && (
+                    <Badge variant="secondary" className="ml-2">
+                      Pendente
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell>{p.email}</TableCell>
+                <TableCell>
+                  <Switch
+                    checked={p.aprovado}
+                    disabled={!isAdmin}
+                    onCheckedChange={(v) => alternarAcesso(p.id, v)}
+                  />
+                </TableCell>
                 {ROLES.map((r) => {
                   const tem = roles.some((x) => x.user_id === p.id && x.role === r);
                   return (
@@ -101,7 +137,7 @@ function UsuariosPage() {
             ))}
             {profiles.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   Nenhum usuário cadastrado.
                 </TableCell>
               </TableRow>
@@ -110,9 +146,11 @@ function UsuariosPage() {
         </Table>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">
-        Administrador: acesso total · Engenheiro/Projetista: cria e edita cards e versões ·
-        Comercial: orçamentos e clientes · Aprovador: aprova revisões técnicas e versões finais.
+        Novos cadastros ficam bloqueados até que um administrador libere o acesso. Administrador:
+        acesso total · Engenheiro/Projetista: cria e edita cards e versões · Comercial: orçamentos e
+        clientes · Aprovador: aprova revisões técnicas e versões finais.
       </p>
+
     </AppShell>
   );
 }
