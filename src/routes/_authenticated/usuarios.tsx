@@ -19,6 +19,7 @@ import {
   fetchProfiles,
   fetchRoles,
   insertRow,
+  updateRow,
   type AppRole,
 } from "@/lib/api";
 
