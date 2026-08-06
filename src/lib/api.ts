@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   nome: string;
   email: string | null;
+  aprovado: boolean;
 }
 export interface UserRole {
   id: string;
