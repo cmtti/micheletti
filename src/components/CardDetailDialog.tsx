@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, History, Paperclip, ListChecks, MessageSquare } from "lucide-react";
+import { Download, Paperclip, Trash2, Upload, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -8,13 +8,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,17 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/hooks/use-session";
 import {
-  ANEXO_STATUS_LABEL,
-  PRIORIDADE_LABEL,
   brl,
   dataBR,
   deleteRow,
   diasAtraso,
   fetchAnexos,
-  fetchAuditoria,
-  fetchChecklist,
   fetchComentarios,
   fetchEtapas,
   fetchProfiles,
@@ -41,12 +46,16 @@ import {
   logAuditoria,
   situacaoPrazo,
   updateRow,
-  type AnexoStatus,
+  type AnexoVersao,
   type CardItem,
-  type Prioridade,
 } from "@/lib/api";
 
-const NORMAS_SUGERIDAS = ["NBR 5410", "NBR 5419", "NR-10", "NBR 14039"];
+const BUCKET = "anexos";
+const EXTENSOES_PERMITIDAS = ["pdf", "jpg", "jpeg", "png", "dwg"];
+
+function extensao(nomeArquivo: string) {
+  return nomeArquivo.split(".").pop()?.toLowerCase() ?? "";
+}
 
 export function CardDetailDialog({
   card,
@@ -58,6 +67,7 @@ export function CardDetailDialog({
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const cardId = card?.id ?? "";
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: etapas = [] } = useQuery({ queryKey: ["etapas"], queryFn: fetchEtapas });
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
@@ -72,22 +82,10 @@ export function CardDetailDialog({
     queryFn: () => fetchAnexos(cardId),
     enabled: !!cardId,
   });
-  const { data: checklist = [] } = useQuery({
-    queryKey: ["checklist", cardId],
-    queryFn: () => fetchChecklist(cardId),
-    enabled: !!cardId,
-  });
-  const { data: auditoria = [] } = useQuery({
-    queryKey: ["auditoria", cardId],
-    queryFn: () => fetchAuditoria(cardId),
-    enabled: !!cardId,
-  });
 
   const [novoComentario, setNovoComentario] = useState("");
-  const [anexoNome, setAnexoNome] = useState("");
-  const [anexoLink, setAnexoLink] = useState("");
-  const [anexoStatus, setAnexoStatus] = useState<AnexoStatus>("rascunho");
-  const [novaNorma, setNovaNorma] = useState("NBR 5410");
+  const [enviando, setEnviando] = useState(false);
+  const [paraExcluir, setParaExcluir] = useState<AnexoVersao | null>(null);
 
   const salvar = useMutation({
     mutationFn: async (values: Record<string, unknown>) => {
@@ -104,8 +102,67 @@ export function CardDetailDialog({
   if (!card) return null;
   const prazo = situacaoPrazo(card);
   const nome = (id: string | null) => profiles.find((p) => p.id === id)?.nome ?? "—";
-
   const field = (values: Record<string, unknown>) => salvar.mutate(values);
+
+  async function enviarArquivo(file: File) {
+    const ext = extensao(file.name);
+    if (!EXTENSOES_PERMITIDAS.includes(ext)) {
+      toast.error("Formato não permitido. Envie apenas PDF, JPG, PNG ou DWG.");
+      return;
+    }
+    setEnviando(true);
+    try {
+      const path = `${cardId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file);
+      if (error) throw new Error(error.message);
+      const revisao =
+        Math.max(0, ...anexos.filter((a) => a.nome_arquivo === file.name).map((a) => a.revisao)) + 1;
+      await insertRow("anexos_versao", {
+        card_id: cardId,
+        nome_arquivo: file.name,
+        revisao,
+        storage_path: path,
+        autor_id: user?.id,
+      });
+      await logAuditoria(cardId, "Anexo enviado", `${file.name} rev. ${revisao}`);
+      qc.invalidateQueries({ queryKey: ["anexos", cardId] });
+      toast.success("Arquivo anexado.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setEnviando(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function baixar(a: AnexoVersao) {
+    if (!a.storage_path) return toast.error("Arquivo indisponível.");
+    if (/^https?:\/\//.test(a.storage_path)) {
+      window.open(a.storage_path, "_blank", "noreferrer");
+      return;
+    }
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(a.storage_path, 60, { download: a.nome_arquivo });
+    if (error || !data) return toast.error(error?.message ?? "Falha ao gerar link.");
+    window.open(data.signedUrl, "_blank", "noreferrer");
+  }
+
+  async function excluirAnexo(a: AnexoVersao) {
+    try {
+      if (a.storage_path && !/^https?:\/\//.test(a.storage_path)) {
+        await supabase.storage.from(BUCKET).remove([a.storage_path]);
+      }
+      await deleteRow("anexos_versao", a.id);
+      await logAuditoria(cardId, "Anexo removido", a.nome_arquivo);
+      qc.invalidateQueries({ queryKey: ["anexos", cardId] });
+      toast.success("Anexo removido.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setParaExcluir(null);
+    }
+  }
 
   return (
     <Dialog open={!!card} onOpenChange={onOpenChange}>
@@ -140,194 +197,162 @@ export function CardDetailDialog({
                   ? "Concluído no prazo"
                   : "No prazo"}
           </Badge>
-          <Badge variant="secondary">{PRIORIDADE_LABEL[card.prioridade]}</Badge>
-          <Badge variant="outline">{card.percentual}% concluído</Badge>
         </div>
 
-        <Tabs defaultValue="detalhes" className="mt-2">
-          <TabsList>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            <TabsTrigger value="comentarios">
-              <MessageSquare className="h-3.5 w-3.5" /> {comentarios.length}
-            </TabsTrigger>
-            <TabsTrigger value="anexos">
-              <Paperclip className="h-3.5 w-3.5" /> {anexos.length}
-            </TabsTrigger>
-            <TabsTrigger value="checklist">
-              <ListChecks className="h-3.5 w-3.5" /> Normas
-            </TabsTrigger>
-            <TabsTrigger value="auditoria">
-              <History className="h-3.5 w-3.5" /> Log
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="detalhes" className="space-y-4 pt-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Projeto</Label>
-                <Select
-                  value={card.projeto_id ?? undefined}
-                  onValueChange={(v) => v !== card.projeto_id && field({ projeto_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projetos.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Etapa</Label>
-                <Select
-                  value={card.etapa_id ?? undefined}
-                  onValueChange={(v) => field({ etapa_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {etapas.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Responsável</Label>
-                <Select
-                  value={card.responsavel_id ?? undefined}
-                  onValueChange={(v) => field({ responsavel_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sem responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome || p.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Prioridade</Label>
-                <Select
-                  value={card.prioridade}
-                  onValueChange={(v) => field({ prioridade: v as Prioridade })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PRIORIDADE_LABEL).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Andamento (%)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  defaultValue={card.percentual}
-                  onBlur={(e) => field({ percentual: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Início previsto</Label>
-                <Input
-                  type="date"
-                  defaultValue={card.inicio_previsto ?? ""}
-                  onBlur={(e) => field({ inicio_previsto: e.target.value || null })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Término previsto</Label>
-                <Input
-                  type="date"
-                  defaultValue={card.fim_previsto ?? ""}
-                  onBlur={(e) => field({ fim_previsto: e.target.value || null })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Início real</Label>
-                <Input
-                  type="date"
-                  defaultValue={card.inicio_real ?? ""}
-                  onBlur={(e) => field({ inicio_real: e.target.value || null })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Término real</Label>
-                <Input
-                  type="date"
-                  defaultValue={card.fim_real ?? ""}
-                  onBlur={(e) => field({ fim_real: e.target.value || null })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Valor do serviço ({brl(Number(card.custo_estimado))})</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  defaultValue={card.custo_estimado}
-                  onBlur={(e) => field({ custo_estimado: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Valor recebido ({brl(Number(card.custo_real))})</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  defaultValue={card.custo_real}
-                  onBlur={(e) => field({ custo_real: Number(e.target.value) })}
-                />
-              </div>
+        <section className="mt-2 space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Projeto</Label>
+              <Select
+                value={card.projeto_id ?? undefined}
+                onValueChange={(v) => v !== card.projeto_id && field({ projeto_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projetos.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Tags (separadas por vírgula)</Label>
+              <Label>Etapa</Label>
+              <Select
+                value={card.etapa_id ?? undefined}
+                onValueChange={(v) => field({ etapa_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {etapas.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Responsável</Label>
+              <Select
+                value={card.responsavel_id ?? undefined}
+                onValueChange={(v) => field({ responsavel_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome || p.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Início real</Label>
               <Input
-                defaultValue={card.tags.join(", ")}
-                onBlur={(e) =>
-                  field({
-                    tags: e.target.value
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean),
-                  })
-                }
+                type="date"
+                defaultValue={card.inicio_real ?? ""}
+                onBlur={(e) => field({ inicio_real: e.target.value || null })}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Descrição</Label>
-              <Textarea
-                rows={3}
-                defaultValue={card.descricao ?? ""}
-                onBlur={(e) => field({ descricao: e.target.value })}
+              <Label>Término real</Label>
+              <Input
+                type="date"
+                defaultValue={card.fim_real ?? ""}
+                onBlur={(e) => field({ fim_real: e.target.value || null })}
               />
             </div>
-          </TabsContent>
+            <div className="space-y-1.5">
+              <Label>Valor do serviço ({brl(Number(card.custo_estimado))})</Label>
+              <Input
+                type="number"
+                step="0.01"
+                defaultValue={card.custo_estimado}
+                onBlur={(e) => field({ custo_estimado: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor recebido ({brl(Number(card.custo_real))})</Label>
+              <Input
+                type="number"
+                step="0.01"
+                defaultValue={card.custo_real}
+                onBlur={(e) => field({ custo_real: Number(e.target.value) })}
+              />
+            </div>
+          </div>
 
-          <TabsContent value="comentarios" className="space-y-4 pt-4">
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Paperclip className="h-4 w-4" /> Anexos ({anexos.length})
+            </h3>
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {anexos.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{a.nome_arquivo}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {extensao(a.nome_arquivo).toUpperCase() || "Arquivo"} · {nome(a.autor_id)} ·{" "}
+                      {dataBR(a.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => baixar(a)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setParaExcluir(a)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+              {anexos.length === 0 && (
+                <li className="p-3 text-sm text-muted-foreground">Nenhum arquivo anexado.</li>
+              )}
+            </ul>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.dwg,application/pdf,image/jpeg,image/png"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) enviarArquivo(f);
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={enviando}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" /> {enviando ? "Enviando..." : "Anexar arquivo"}
+              </Button>
+              <span className="text-xs text-muted-foreground">PDF, JPG, PNG ou DWG</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <MessageSquare className="h-4 w-4" /> Comentários ({comentarios.length})
+            </h3>
             <div className="space-y-3">
               {comentarios.map((c) => (
                 <div key={c.id} className="rounded-md border border-border p-3">
                   <p className="text-xs text-muted-foreground">
                     {nome(c.autor_id)} · {new Date(c.created_at).toLocaleString("pt-BR")}
                   </p>
-                  <p className="mt-1 text-sm whitespace-pre-wrap">{c.texto}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{c.texto}</p>
                 </div>
               ))}
               {comentarios.length === 0 && (
@@ -359,196 +384,26 @@ export function CardDetailDialog({
                 Comentar
               </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="anexos" className="space-y-4 pt-4">
-            <ul className="divide-y divide-border rounded-md border border-border">
-              {anexos.map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {a.nome_arquivo}{" "}
-                      <span className="text-muted-foreground">rev. {a.revisao}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {nome(a.autor_id)} · {dataBR(a.created_at)}
-                      {a.storage_path && (
-                        <>
-                          {" · "}
-                          <a
-                            className="underline"
-                            href={a.storage_path}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            abrir
-                          </a>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      className={
-                        a.status === "final_aprovado"
-                          ? "bg-success text-success-foreground"
-                          : a.status === "em_revisao"
-                            ? "bg-warning text-warning-foreground"
-                            : ""
-                      }
-                      variant={a.status === "rascunho" ? "secondary" : "default"}
-                    >
-                      {ANEXO_STATUS_LABEL[a.status]}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={async () => {
-                        await deleteRow("anexos_versao", a.id);
-                        qc.invalidateQueries({ queryKey: ["anexos", cardId] });
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-              {anexos.length === 0 && (
-                <li className="p-3 text-sm text-muted-foreground">Nenhuma versão registrada.</li>
-              )}
-            </ul>
-            <div className="grid gap-2 sm:grid-cols-4">
-              <Input
-                className="sm:col-span-2"
-                placeholder="Nome do arquivo"
-                value={anexoNome}
-                onChange={(e) => setAnexoNome(e.target.value)}
-              />
-              <Input
-                placeholder="Link (opcional)"
-                value={anexoLink}
-                onChange={(e) => setAnexoLink(e.target.value)}
-              />
-              <Select value={anexoStatus} onValueChange={(v) => setAnexoStatus(v as AnexoStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ANEXO_STATUS_LABEL).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>
-                      {v}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              size="sm"
-              disabled={!anexoNome.trim()}
-              onClick={async () => {
-                const revisao =
-                  Math.max(
-                    0,
-                    ...anexos
-                      .filter((a) => a.nome_arquivo === anexoNome.trim())
-                      .map((a) => a.revisao),
-                  ) + 1;
-                await insertRow("anexos_versao", {
-                  card_id: cardId,
-                  nome_arquivo: anexoNome.trim(),
-                  revisao,
-                  status: anexoStatus,
-                  storage_path: anexoLink || null,
-                  autor_id: user?.id,
-                });
-                await logAuditoria(cardId, "Nova versão de anexo", `${anexoNome} rev. ${revisao}`);
-                setAnexoNome("");
-                setAnexoLink("");
-                qc.invalidateQueries({ queryKey: ["anexos", cardId] });
-                qc.invalidateQueries({ queryKey: ["auditoria", cardId] });
-              }}
-            >
-              <Plus className="h-4 w-4" /> Registrar versão
-            </Button>
-          </TabsContent>
-
-          <TabsContent value="checklist" className="space-y-4 pt-4">
-            <ul className="space-y-2">
-              {checklist.map((i) => (
-                <li key={i.id} className="flex items-center gap-3 rounded-md border border-border p-3">
-                  <Checkbox
-                    checked={i.concluido}
-                    onCheckedChange={async (v) => {
-                      await updateRow("checklist_itens", i.id, { concluido: !!v });
-                      await logAuditoria(
-                        cardId,
-                        "Checklist atualizado",
-                        `${i.norma}: ${v ? "concluído" : "pendente"}`,
-                      );
-                      qc.invalidateQueries({ queryKey: ["checklist", cardId] });
-                      qc.invalidateQueries({ queryKey: ["auditoria", cardId] });
-                    }}
-                  />
-                  <span className="flex-1 text-sm">{i.norma}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={async () => {
-                      await deleteRow("checklist_itens", i.id);
-                      qc.invalidateQueries({ queryKey: ["checklist", cardId] });
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-              {checklist.length === 0 && (
-                <li className="text-sm text-muted-foreground">Nenhum item de conformidade.</li>
-              )}
-            </ul>
-            <div className="flex gap-2">
-              <Input
-                list="normas"
-                value={novaNorma}
-                onChange={(e) => setNovaNorma(e.target.value)}
-                placeholder="NBR 5410"
-              />
-              <datalist id="normas">
-                {NORMAS_SUGERIDAS.map((n) => (
-                  <option key={n} value={n} />
-                ))}
-              </datalist>
-              <Button
-                size="sm"
-                disabled={!novaNorma.trim()}
-                onClick={async () => {
-                  await insertRow("checklist_itens", { card_id: cardId, norma: novaNorma.trim() });
-                  qc.invalidateQueries({ queryKey: ["checklist", cardId] });
-                }}
-              >
-                <Plus className="h-4 w-4" /> Adicionar
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="auditoria" className="pt-4">
-            <ul className="divide-y divide-border rounded-md border border-border">
-              {auditoria.map((a) => (
-                <li key={a.id} className="p-3">
-                  <p className="text-sm">{a.acao}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {nome(a.autor_id)} · {new Date(a.created_at).toLocaleString("pt-BR")}
-                    {a.detalhe ? ` · ${a.detalhe}` : ""}
-                  </p>
-                </li>
-              ))}
-              {auditoria.length === 0 && (
-                <li className="p-3 text-sm text-muted-foreground">Sem registros.</li>
-              )}
-            </ul>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </section>
       </DialogContent>
+
+      <AlertDialog open={!!paraExcluir} onOpenChange={(o) => !o && setParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover anexo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O arquivo "{paraExcluir?.nome_arquivo}" será excluído permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => paraExcluir && excluirAnexo(paraExcluir)}>
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

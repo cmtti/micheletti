@@ -8,7 +8,6 @@ import { CardDetailDialog } from "@/components/CardDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -17,9 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  PRIORIDADE_LABEL,
   brl,
-  dataBR,
   fetchCards,
   fetchEtapas,
   fetchProfiles,
@@ -223,29 +220,20 @@ function KanbanPage() {
                       <p className="mt-1 truncate text-xs text-muted-foreground">
                         {projeto?.nome ?? "Sem projeto"}
                       </p>
-                      <Progress value={card.percentual} className="mt-2 h-1.5" />
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge variant="secondary" className="text-[10px]">
-                          {PRIORIDADE_LABEL[card.prioridade]}
-                        </Badge>
-                        {card.tags.slice(0, 2).map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px]">
-                            {t}
-                          </Badge>
-                        ))}
-                        {prazo === "atrasado" && (
+                      {prazo === "atrasado" && (
+                        <div className="mt-2">
                           <Badge className="bg-danger text-[10px] text-danger-foreground">
                             <AlertTriangle className="mr-1 h-3 w-3" /> Atrasado
                           </Badge>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>{resp?.nome ?? "Sem responsável"}</span>
-                        <span>{dataBR(card.fim_previsto)}</span>
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
                         {brl(Number(card.custo_real))} / {brl(Number(card.custo_estimado))}
                       </p>
+
                     </article>
                   );
                 })}
