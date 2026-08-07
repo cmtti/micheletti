@@ -52,6 +52,8 @@
   --color-danger: var(--danger);
   --color-danger-foreground: var(--danger-foreground);
   --color-ring-offset-background: var(--background);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-foreground: var(--brand-navy-foreground);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -76,8 +78,10 @@
   --card-foreground: oklch(0.24 0.03 255);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.24 0.03 255);
-  --primary: oklch(0.48 0.13 250);
-  --primary-foreground: oklch(0.99 0.005 250);
+  --primary: oklch(0.635 0.145 234);
+  --primary-foreground: oklch(1 0 0);
+  --brand-navy: oklch(0.229 0.038 275);
+  --brand-navy-foreground: oklch(1 0 0);
   --secondary: oklch(0.955 0.008 250);
   --secondary-foreground: oklch(0.32 0.04 255);
   --muted: oklch(0.962 0.006 250);
