@@ -8,7 +8,6 @@ import { CardDetailDialog } from "@/components/CardDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -17,9 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  PRIORIDADE_LABEL,
   brl,
-  dataBR,
   fetchCards,
   fetchEtapas,
   fetchProfiles,
