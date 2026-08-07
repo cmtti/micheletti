@@ -80,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ElétricaFlow — Gestão de Projetos Elétricos" },
+      { title: "Lenzee — Gestão de Projetos Elétricos" },
       {
         name: "description",
         content:
-          "Sistema Kanban para equipes de engenharia elétrica controlarem orçamentos, prazos, custos e conformidade normativa.",
+          "Sistema Kanban da Lenzee Engenharia Elétrica e Consultoria para controle de orçamentos, prazos, valores e conformidade normativa.",
       },
-      { name: "author", content: "ElétricaFlow" },
-      { property: "og:title", content: "ElétricaFlow — Gestão de Projetos Elétricos" },
+      { name: "author", content: "Lenzee Engenharia Elétrica e Consultoria" },
+      { property: "og:title", content: "Lenzee — Gestão de Projetos Elétricos" },
       {
         property: "og:description",
         content: "Controle projetos elétricos do orçamento à entrega em um único quadro.",
@@ -101,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
