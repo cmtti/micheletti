@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, Clock, FolderKanban, Printer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FolderKanban, Printer } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -86,7 +86,7 @@ function Dashboard() {
         </Button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Kpi
           label="Projetos ativos"
           value={String(projetos.filter((p) => p.status === "ativo").length)}
@@ -107,17 +107,8 @@ function Dashboard() {
           icon={CheckCircle2}
           tone={real > estimado ? "danger" : "success"}
         />
-        <Kpi
-          label="Andamento médio"
-          value={
-            cards.length
-              ? `${Math.round(cards.reduce((s, c) => s + c.percentual, 0) / cards.length)}%`
-              : "0%"
-          }
-          hint={`${cards.length} cards`}
-          icon={Clock}
-        />
       </div>
+
 
       <div className="mt-6 grid gap-6 lg:grid-cols-5">
         <section className="rounded-lg border border-border bg-card p-5 lg:col-span-3">

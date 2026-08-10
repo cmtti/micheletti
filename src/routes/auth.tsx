@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Globe, Instagram, MessageCircle } from "lucide-react";
 import logoPositivo from "@/assets/lenzee-positivo.png.asset.json";
 import logoNegativo from "@/assets/lenzee-negativo.png.asset.json";
 
@@ -86,9 +88,9 @@ function AuthPage() {
           href="https://lenzee.com.br"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-white/70 underline-offset-4 hover:text-white hover:underline"
+          className="inline-flex w-fit items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
         >
-          lenzee.com.br
+          <Globe className="h-4 w-4" /> Visite lenzee.com.br
         </a>
       </aside>
 
@@ -191,17 +193,72 @@ function AuthPage() {
             Continuar com Google
           </Button>
 
-          <p className="mt-8 text-center text-xs text-muted-foreground">
+          <div className="mt-8 space-y-4">
             <a
               href="https://lenzee.com.br"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground hover:underline"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              lenzee.com.br
-            </a>{" "}
-            · Lenzee Engenharia Elétrica e Consultoria
-          </p>
+              <Globe className="h-4 w-4" /> Visite lenzee.com.br
+            </a>
+
+            <div className="flex items-center justify-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Falar no WhatsApp"
+                    className="border-brand-navy/20 text-brand-navy hover:bg-accent"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-64 p-2">
+                  <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">
+                    Fale conosco no WhatsApp
+                  </p>
+                  {[
+                    { nome: "Hugo Coelho", tel: "(16) 99179-3077", url: "https://wa.me/5516991793077" },
+                    { nome: "Gabriel Micheletti", tel: "(16) 99288-7914", url: "https://wa.me/5516992887914" },
+                  ].map((c) => (
+                    <a
+                      key={c.url}
+                      href={c.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent"
+                    >
+                      <span className="font-medium">{c.nome}</span>
+                      <span className="text-xs text-muted-foreground">{c.tel}</span>
+                    </a>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                className="border-brand-navy/20 text-brand-navy hover:bg-accent"
+              >
+                <a
+                  href="https://www.instagram.com/lenzee.eec?igsh=MTRtdmo3dzN5Y2g2Zw=="
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram da Lenzee"
+                >
+                  <Instagram className="h-5 w-5" />
+                </a>
+              </Button>
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Lenzee Engenharia Elétrica e Consultoria
+            </p>
+          </div>
         </div>
       </main>
     </div>
