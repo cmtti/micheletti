@@ -204,18 +204,16 @@ function AuthPage() {
               <Globe className="h-4 w-4" /> Visite lenzee.com.br
             </a>
 
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-6">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="icon"
                     aria-label="Falar no WhatsApp"
-                    className="border-brand-navy/20 text-brand-navy hover:bg-accent"
+                    className="text-brand-navy transition-transform hover:scale-110 hover:opacity-80"
                   >
-                    <MessageCircle className="h-5 w-5" />
-                  </Button>
+                    <FaWhatsapp size={28} />
+                  </button>
                 </PopoverTrigger>
                 <PopoverContent align="center" className="w-64 p-2">
                   <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">
@@ -239,22 +237,27 @@ function AuthPage() {
                 </PopoverContent>
               </Popover>
 
-              <Button
-                asChild
-                variant="outline"
-                size="icon"
-                className="border-brand-navy/20 text-brand-navy hover:bg-accent"
+              <a
+                href="https://www.instagram.com/lenzee.eec?igsh=MTRtdmo3dzN5Y2g2Zw=="
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram da Lenzee"
+                className="text-brand-navy transition-transform hover:scale-110 hover:opacity-80"
               >
-                <a
-                  href="https://www.instagram.com/lenzee.eec?igsh=MTRtdmo3dzN5Y2g2Zw=="
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram da Lenzee"
-                >
-                  <Instagram className="h-5 w-5" />
-                </a>
-              </Button>
+                <FaInstagram size={28} />
+              </a>
+
+              <a
+                href="https://lenzee.com.br"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Site da Lenzee"
+                className="text-primary transition-transform hover:scale-110 hover:opacity-80"
+              >
+                <Globe size={28} />
+              </a>
             </div>
+
 
             <p className="text-center text-xs text-muted-foreground">
               Lenzee Engenharia Elétrica e Consultoria
