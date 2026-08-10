@@ -7,13 +7,13 @@ import {
   Users,
   Contact,
   LogOut,
-  Zap,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser, useMyRoles } from "@/hooks/use-session";
 import { ROLE_LABEL } from "@/lib/api";
+import logoPositivo from "@/assets/lenzee-positivo.png.asset.json";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -86,9 +86,14 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-6 py-4 print:hidden">
-          <div>
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard" aria-label="Ir para o Dashboard" className="cursor-pointer lg:hidden">
+              <img src={logoPositivo.url} alt="Lenzee" className="h-8 w-auto" />
+            </Link>
+            <div>
             <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">{actions}</div>
         </header>
