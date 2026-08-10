@@ -49,15 +49,17 @@ export function AppShell({
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex print:hidden">
-        <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Zap className="h-4 w-4" />
-          </span>
-          <div className="leading-tight">
-            <p className="text-sm font-semibold">ElétricaFlow</p>
-            <p className="text-xs text-muted-foreground">Gestão de projetos</p>
-          </div>
-        </div>
+        <Link
+          to="/dashboard"
+          aria-label="Ir para o Dashboard"
+          className="flex cursor-pointer items-center border-b border-sidebar-border px-5 py-4 transition-opacity hover:opacity-80"
+        >
+          <img
+            src={logoPositivo.url}
+            alt="Lenzee Engenharia Elétrica e Consultoria"
+            className="h-9 w-auto"
+          />
+        </Link>
         <nav className="flex-1 space-y-1 p-3">
           {NAV.map(({ to, label, icon: Icon }) => (
             <Link
