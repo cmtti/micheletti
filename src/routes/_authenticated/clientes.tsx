@@ -23,7 +23,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  brl,
   deleteRow,
+  fetchCards,
   fetchClientes,
   fetchProjetos,
   insertRow,
@@ -85,11 +94,30 @@ function ClientesPage() {
   const qc = useQueryClient();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: fetchClientes });
   const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
+  const { data: cards = [] } = useQuery({ queryKey: ["cards"], queryFn: fetchCards });
   const [novo, setNovo] = useState(false);
   const [editando, setEditando] = useState<Cliente | null>(null);
   const [busca, setBusca] = useState("");
+  const [ordem, setOrdem] = useState<"valor" | "nome" | "projetos">("valor");
 
-  const lista = clientes.filter((c) => c.nome.toLowerCase().includes(busca.toLowerCase()));
+  const resumo = clientes.map((c) => {
+    const proj = projetos.filter((p) => p.cliente_id === c.id);
+    const ids = new Set(proj.map((p) => p.id));
+    const total = cards
+      .filter((card) => ids.has(card.projeto_id))
+      .reduce((s, card) => s + Number(card.custo_estimado), 0);
+    return { cliente: c, projetos: proj.length, total };
+  });
+
+  const lista = resumo
+    .filter((r) => r.cliente.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a, b) =>
+      ordem === "nome"
+        ? a.cliente.nome.localeCompare(b.cliente.nome)
+        : ordem === "projetos"
+          ? b.projetos - a.projetos
+          : b.total - a.total,
+    );
 
   return (
     <AppShell
@@ -111,12 +139,24 @@ function ClientesPage() {
         </Dialog>
       }
     >
-      <Input
-        className="mb-4 w-64"
-        placeholder="Buscar cliente..."
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Input
+          className="w-64"
+          placeholder="Buscar cliente..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+        <Select value={ordem} onValueChange={(v) => setOrdem(v as typeof ordem)}>
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="valor">Ordenar por valor total</SelectItem>
+            <SelectItem value="nome">Ordenar por nome</SelectItem>
+            <SelectItem value="projetos">Ordenar por nº de projetos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
@@ -126,17 +166,24 @@ function ClientesPage() {
               <TableHead>E-mail</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Projetos</TableHead>
+              <TableHead>Valor total</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lista.map((c) => (
+            {lista.map(({ cliente: c, projetos: qtd, total }) => (
               <TableRow key={c.id}>
-                <TableCell className="font-medium">{c.nome}</TableCell>
+                <TableCell className="font-medium">
+                  {c.nome}
+                  <span className="block text-xs text-muted-foreground">
+                    {qtd} {qtd === 1 ? "projeto" : "projetos"}, valor total de {brl(total)}
+                  </span>
+                </TableCell>
                 <TableCell>{c.contato || "—"}</TableCell>
                 <TableCell>{c.email || "—"}</TableCell>
                 <TableCell>{c.telefone || "—"}</TableCell>
-                <TableCell>{projetos.filter((p) => p.cliente_id === c.id).length}</TableCell>
+                <TableCell>{qtd}</TableCell>
+                <TableCell className="font-medium">{brl(total)}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" onClick={() => setEditando(c)}>
                     Editar
@@ -157,7 +204,7 @@ function ClientesPage() {
             ))}
             {lista.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   Nenhum cliente cadastrado.
                 </TableCell>
               </TableRow>
