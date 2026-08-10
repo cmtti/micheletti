@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Globe, Instagram, MessageCircle } from "lucide-react";
+import { Globe } from "lucide-react";
+import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import logoPositivo from "@/assets/lenzee-positivo.png.asset.json";
 import logoNegativo from "@/assets/lenzee-negativo.png.asset.json";
 
