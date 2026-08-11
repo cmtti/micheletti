@@ -85,15 +85,8 @@ function AuthPage() {
           </p>
           <span className="mt-8 block h-1 w-24 rounded-full bg-primary" />
         </div>
-        <a
-          href="https://lenzee.com.br"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex w-fit items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <Globe className="h-4 w-4" /> Visite lenzee.com.br
-        </a>
       </aside>
+
 
       {/* Formulário */}
       <main className="flex items-center justify-center px-6 py-12">
