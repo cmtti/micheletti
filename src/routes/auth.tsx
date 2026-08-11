@@ -241,17 +241,8 @@ function AuthPage() {
               >
                 <FaInstagram size={28} />
               </a>
-
-              <a
-                href="https://lenzee.com.br"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Site da Lenzee"
-                className="text-primary transition-transform hover:scale-110 hover:opacity-80"
-              >
-                <Globe size={28} />
-              </a>
             </div>
+
 
 
             <p className="text-center text-xs text-muted-foreground">
