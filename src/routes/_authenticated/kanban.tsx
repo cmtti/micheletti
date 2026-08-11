@@ -1,13 +1,24 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, ArrowLeft, ArrowRight, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { CardDetailDialog } from "@/components/CardDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -17,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import {
   brl,
+  deleteRow,
   fetchCards,
   fetchEtapas,
   fetchProfiles,
@@ -44,6 +56,10 @@ function KanbanPage() {
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState<CardItem | null>(null);
   const [novoTitulo, setNovoTitulo] = useState<Record<string, string>>({});
+  const [cardExcluir, setCardExcluir] = useState<CardItem | null>(null);
+  const [etapaExcluir, setEtapaExcluir] = useState<Etapa | null>(null);
+  const [destinoCards, setDestinoCards] = useState<string>("excluir");
+  const [processando, setProcessando] = useState(false);
 
   const visiveis = useMemo(
     () =>
@@ -110,6 +126,50 @@ function KanbanPage() {
       ordem: (etapas.at(-1)?.ordem ?? 0) + 1,
     });
     qc.invalidateQueries({ queryKey: ["etapas"] });
+  }
+
+  async function confirmarExcluirCard() {
+    if (!cardExcluir) return;
+    setProcessando(true);
+    try {
+      await deleteRow("cards", cardExcluir.id);
+      setCardExcluir(null);
+      refresh();
+      toast.success("Card excluído.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  const cardsDaEtapaExcluir = etapaExcluir
+    ? cards.filter((c) => c.etapa_id === etapaExcluir.id)
+    : [];
+
+  async function confirmarExcluirEtapa() {
+    if (!etapaExcluir) return;
+    setProcessando(true);
+    try {
+      if (cardsDaEtapaExcluir.length > 0) {
+        if (destinoCards === "excluir") {
+          for (const c of cardsDaEtapaExcluir) await deleteRow("cards", c.id);
+        } else {
+          for (const c of cardsDaEtapaExcluir)
+            await updateRow("cards", c.id, { etapa_id: destinoCards });
+        }
+      }
+      await deleteRow("etapas_kanban", etapaExcluir.id);
+      setEtapaExcluir(null);
+      setDestinoCards("excluir");
+      qc.invalidateQueries({ queryKey: ["etapas"] });
+      refresh();
+      toast.success("Etapa excluída.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProcessando(false);
+    }
   }
 
   return (
@@ -189,6 +249,18 @@ function KanbanPage() {
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label={`Excluir etapa ${etapa.nome}`}
+                    onClick={() => {
+                      setDestinoCards("excluir");
+                      setEtapaExcluir(etapa);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-danger" />
+                  </Button>
                 </div>
               </header>
 
@@ -203,8 +275,20 @@ function KanbanPage() {
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData("text/card-id", card.id)}
                       onClick={() => setAberto(card)}
-                      className="cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md"
+                      className="group relative cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md"
                     >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Excluir card ${card.titulo}`}
+                        className="absolute bottom-2 right-2 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCardExcluir(card);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-danger" />
+                      </Button>
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium leading-snug">{card.titulo}</p>
                         <span
@@ -259,6 +343,77 @@ function KanbanPage() {
         card={aberto ? (cards.find((c) => c.id === aberto.id) ?? null) : null}
         onOpenChange={(o) => !o && setAberto(null)}
       />
+
+      <AlertDialog open={!!cardExcluir} onOpenChange={(o) => !o && setCardExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir este card?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{cardExcluir?.titulo}" será removido do quadro junto com comentários, anexos e
+              histórico. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processando}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExcluirCard();
+              }}
+            >
+              {processando ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!etapaExcluir} onOpenChange={(o) => !o && setEtapaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir a etapa "{etapaExcluir?.nome}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cardsDaEtapaExcluir.length > 0
+                ? `Esta etapa possui ${cardsDaEtapaExcluir.length} card(s). Escolha o que fazer com eles antes de excluir. Esta ação não pode ser desfeita.`
+                : "A etapa deixará de aparecer no quadro. Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {cardsDaEtapaExcluir.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Cards desta etapa</Label>
+              <Select value={destinoCards} onValueChange={setDestinoCards}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excluir">Excluir os cards junto com a etapa</SelectItem>
+                  {etapas
+                    .filter((e) => e.id !== etapaExcluir?.id)
+                    .map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        Mover os cards para "{e.nome}"
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processando}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExcluirEtapa();
+              }}
+            >
+              {processando ? "Excluindo..." : "Excluir etapa"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
