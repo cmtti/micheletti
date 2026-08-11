@@ -1,10 +1,24 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -14,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCurrentUser, useMyRoles } from "@/hooks/use-session";
+import { excluirUsuario } from "@/lib/admin.functions";
 import {
   ROLE_LABEL,
   deleteRow,
@@ -22,13 +37,14 @@ import {
   insertRow,
   updateRow,
   type AppRole,
+  type Profile,
 } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
 });
 
-const ROLES: AppRole[] = ["admin", "engenheiro", "comercial", "aprovador"];
+const ROLES: AppRole[] = ["admin", "engenheiro"];
 
 function UsuariosPage() {
   const qc = useQueryClient();
@@ -36,6 +52,10 @@ function UsuariosPage() {
   const { isAdmin } = useMyRoles(user?.id);
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
   const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: fetchRoles });
+  const removerConta = useServerFn(excluirUsuario);
+
+  const [paraExcluir, setParaExcluir] = useState<Profile | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   async function alternar(userId: string, role: AppRole, marcar: boolean) {
     try {
@@ -74,6 +94,22 @@ function UsuariosPage() {
     }
   }
 
+  async function confirmarExclusao() {
+    if (!paraExcluir) return;
+    setExcluindo(true);
+    try {
+      await removerConta({ data: { userId: paraExcluir.id } });
+      await qc.invalidateQueries({ queryKey: ["profiles"] });
+      await qc.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Conta excluída.");
+      setParaExcluir(null);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
   const pendentes = profiles.filter((p) => !p.aprovado);
 
   return (
@@ -100,6 +136,7 @@ function UsuariosPage() {
               {ROLES.map((r) => (
                 <TableHead key={r}>{ROLE_LABEL[r]}</TableHead>
               ))}
+              <TableHead className="w-16 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,11 +170,23 @@ function UsuariosPage() {
                     </TableCell>
                   );
                 })}
+                <TableCell className="text-right">
+                  {isAdmin && p.id !== user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Excluir ${p.nome || p.email}`}
+                      onClick={() => setParaExcluir(p)}
+                    >
+                      <Trash2 className="h-4 w-4 text-danger" />
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {profiles.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                   Nenhum usuário cadastrado.
                 </TableCell>
               </TableRow>
@@ -147,10 +196,32 @@ function UsuariosPage() {
       </div>
       <p className="mt-4 text-sm text-muted-foreground">
         Novos cadastros ficam bloqueados até que um administrador libere o acesso. Administrador:
-        acesso total · Engenheiro/Projetista: cria e edita cards e versões · Comercial: orçamentos e
-        clientes · Aprovador: aprova revisões técnicas e versões finais.
+        acesso total · Engenheiro/Projetista: cria e edita cards, projetos e versões.
       </p>
 
+      <AlertDialog open={!!paraExcluir} onOpenChange={(o) => !o && setParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conta de acesso?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário {paraExcluir?.nome || paraExcluir?.email}? A
+              sessão dele é encerrada imediatamente e esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={excluindo}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarExclusao();
+              }}
+            >
+              {excluindo ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
