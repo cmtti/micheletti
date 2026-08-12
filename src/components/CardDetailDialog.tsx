@@ -292,6 +292,58 @@ export function CardDetailDialog({
           </div>
 
           <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <Users className="h-4 w-4" /> Pagamento a Terceiros/Parceiros
+              </h3>
+              <span className="text-sm font-semibold text-primary">
+                Total: {brl(totalParceiros)}
+              </span>
+            </div>
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {parceiros.map((p) => (
+                <li key={p.id} className="flex items-center gap-2 p-3">
+                  <Input
+                    className="flex-1"
+                    defaultValue={p.nome}
+                    placeholder="Nome do parceiro"
+                    onBlur={(e) =>
+                      e.target.value !== p.nome &&
+                      salvarParceiro.mutate({ id: p.id, values: { nome: e.target.value } })
+                    }
+                  />
+                  <Input
+                    className="w-36"
+                    type="number"
+                    step="0.01"
+                    defaultValue={p.valor}
+                    onBlur={(e) =>
+                      Number(e.target.value) !== Number(p.valor) &&
+                      salvarParceiro.mutate({ id: p.id, values: { valor: Number(e.target.value) } })
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setParceiroExcluir(p)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+              {parceiros.length === 0 && (
+                <li className="p-3 text-sm text-muted-foreground">
+                  Nenhum parceiro vinculado a este card.
+                </li>
+              )}
+            </ul>
+            <Button size="sm" variant="outline" onClick={() => adicionarParceiro.mutate()}>
+              <Plus className="h-4 w-4" /> Adicionar parceiro
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+
             <h3 className="flex items-center gap-2 text-sm font-semibold">
               <Paperclip className="h-4 w-4" /> Anexos ({anexos.length})
             </h3>
