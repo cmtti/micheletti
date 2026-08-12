@@ -182,6 +182,12 @@ export const fetchAuditoria = (cardId: string) =>
       .eq("card_id", cardId)
       .order("created_at", { ascending: false }),
   );
+export const fetchParceiros = (cardId: string) =>
+  run<CardParceiro[]>(
+    db.from("card_parceiros").select("*").eq("card_id", cardId).order("created_at"),
+  );
+export const fetchTodosParceiros = () =>
+  run<CardParceiro[]>(db.from("card_parceiros").select("*").order("created_at"));
 export const fetchApoios = (projetoId?: string) =>
   run<ProjetoApoio[]>(
     projetoId
