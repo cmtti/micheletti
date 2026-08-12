@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Paperclip, Trash2, Upload, MessageSquare } from "lucide-react";
+import { Download, Paperclip, Trash2, Upload, MessageSquare, Users, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
