@@ -90,6 +90,41 @@ export type Database = {
           },
         ]
       }
+      card_parceiros: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_parceiros_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           created_at: string

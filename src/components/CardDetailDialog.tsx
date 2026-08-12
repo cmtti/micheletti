@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Paperclip, Trash2, Upload, MessageSquare } from "lucide-react";
+import { Download, Paperclip, Trash2, Upload, MessageSquare, Users, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -40,6 +40,7 @@ import {
   fetchAnexos,
   fetchComentarios,
   fetchEtapas,
+  fetchParceiros,
   fetchProfiles,
   fetchProjetos,
   insertRow,
@@ -48,6 +49,7 @@ import {
   updateRow,
   type AnexoVersao,
   type CardItem,
+  type CardParceiro,
 } from "@/lib/api";
 
 const BUCKET = "anexos";
@@ -83,9 +85,46 @@ export function CardDetailDialog({
     enabled: !!cardId,
   });
 
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros", cardId],
+    queryFn: () => fetchParceiros(cardId),
+    enabled: !!cardId,
+  });
+
   const [novoComentario, setNovoComentario] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [paraExcluir, setParaExcluir] = useState<AnexoVersao | null>(null);
+  const [parceiroExcluir, setParceiroExcluir] = useState<CardParceiro | null>(null);
+
+  const totalParceiros = parceiros.reduce((s, p) => s + Number(p.valor || 0), 0);
+
+  const invalidarParceiros = () => {
+    qc.invalidateQueries({ queryKey: ["parceiros", cardId] });
+    qc.invalidateQueries({ queryKey: ["parceiros"] });
+  };
+
+  const adicionarParceiro = useMutation({
+    mutationFn: () => insertRow("card_parceiros", { card_id: cardId, nome: "", valor: 0 }),
+    onSuccess: invalidarParceiros,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const salvarParceiro = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: Record<string, unknown> }) =>
+      updateRow("card_parceiros", id, values),
+    onSuccess: invalidarParceiros,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluirParceiro = useMutation({
+    mutationFn: (id: string) => deleteRow("card_parceiros", id),
+    onSuccess: () => {
+      invalidarParceiros();
+      toast.success("Parceiro removido.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setParceiroExcluir(null),
+  });
 
   const salvar = useMutation({
     mutationFn: async (values: Record<string, unknown>) => {
@@ -292,6 +331,58 @@ export function CardDetailDialog({
           </div>
 
           <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <Users className="h-4 w-4" /> Pagamento a Terceiros/Parceiros
+              </h3>
+              <span className="text-sm font-semibold text-primary">
+                Total: {brl(totalParceiros)}
+              </span>
+            </div>
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {parceiros.map((p) => (
+                <li key={p.id} className="flex items-center gap-2 p-3">
+                  <Input
+                    className="flex-1"
+                    defaultValue={p.nome}
+                    placeholder="Nome do parceiro"
+                    onBlur={(e) =>
+                      e.target.value !== p.nome &&
+                      salvarParceiro.mutate({ id: p.id, values: { nome: e.target.value } })
+                    }
+                  />
+                  <Input
+                    className="w-36"
+                    type="number"
+                    step="0.01"
+                    defaultValue={p.valor}
+                    onBlur={(e) =>
+                      Number(e.target.value) !== Number(p.valor) &&
+                      salvarParceiro.mutate({ id: p.id, values: { valor: Number(e.target.value) } })
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setParceiroExcluir(p)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+              {parceiros.length === 0 && (
+                <li className="p-3 text-sm text-muted-foreground">
+                  Nenhum parceiro vinculado a este card.
+                </li>
+              )}
+            </ul>
+            <Button size="sm" variant="outline" onClick={() => adicionarParceiro.mutate()}>
+              <Plus className="h-4 w-4" /> Adicionar parceiro
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+
             <h3 className="flex items-center gap-2 text-sm font-semibold">
               <Paperclip className="h-4 w-4" /> Anexos ({anexos.length})
             </h3>
@@ -399,6 +490,25 @@ export function CardDetailDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => paraExcluir && excluirAnexo(paraExcluir)}>
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!parceiroExcluir} onOpenChange={(o) => !o && setParceiroExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover parceiro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O parceiro "{parceiroExcluir?.nome || "sem nome"}" será removido deste card.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => parceiroExcluir && excluirParceiro.mutate(parceiroExcluir.id)}
+            >
               Remover
             </AlertDialogAction>
           </AlertDialogFooter>
