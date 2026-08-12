@@ -40,6 +40,7 @@ import {
   fetchAnexos,
   fetchComentarios,
   fetchEtapas,
+  fetchParceiros,
   fetchProfiles,
   fetchProjetos,
   insertRow,
@@ -48,6 +49,7 @@ import {
   updateRow,
   type AnexoVersao,
   type CardItem,
+  type CardParceiro,
 } from "@/lib/api";
 
 const BUCKET = "anexos";
