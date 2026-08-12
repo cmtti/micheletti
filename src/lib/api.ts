@@ -89,6 +89,13 @@ export interface ProjetoApoio {
   link_referencia: string | null;
   created_at: string;
 }
+export interface CardParceiro {
+  id: string;
+  card_id: string;
+  nome: string;
+  valor: number;
+  created_at: string;
+}
 export interface Auditoria {
   id: string;
   card_id: string;
