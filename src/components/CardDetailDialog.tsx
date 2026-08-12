@@ -83,9 +83,46 @@ export function CardDetailDialog({
     enabled: !!cardId,
   });
 
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros", cardId],
+    queryFn: () => fetchParceiros(cardId),
+    enabled: !!cardId,
+  });
+
   const [novoComentario, setNovoComentario] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [paraExcluir, setParaExcluir] = useState<AnexoVersao | null>(null);
+  const [parceiroExcluir, setParceiroExcluir] = useState<CardParceiro | null>(null);
+
+  const totalParceiros = parceiros.reduce((s, p) => s + Number(p.valor || 0), 0);
+
+  const invalidarParceiros = () => {
+    qc.invalidateQueries({ queryKey: ["parceiros", cardId] });
+    qc.invalidateQueries({ queryKey: ["parceiros"] });
+  };
+
+  const adicionarParceiro = useMutation({
+    mutationFn: () => insertRow("card_parceiros", { card_id: cardId, nome: "", valor: 0 }),
+    onSuccess: invalidarParceiros,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const salvarParceiro = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: Record<string, unknown> }) =>
+      updateRow("card_parceiros", id, values),
+    onSuccess: invalidarParceiros,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluirParceiro = useMutation({
+    mutationFn: (id: string) => deleteRow("card_parceiros", id),
+    onSuccess: () => {
+      invalidarParceiros();
+      toast.success("Parceiro removido.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setParceiroExcluir(null),
+  });
 
   const salvar = useMutation({
     mutationFn: async (values: Record<string, unknown>) => {
