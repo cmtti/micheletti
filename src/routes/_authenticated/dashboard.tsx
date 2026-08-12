@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
+import { CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
 import {
   Bar,
   BarChart,
