@@ -495,6 +495,25 @@ export function CardDetailDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!parceiroExcluir} onOpenChange={(o) => !o && setParceiroExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover parceiro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O parceiro "{parceiroExcluir?.nome || "sem nome"}" será removido deste card.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => parceiroExcluir && excluirParceiro.mutate(parceiroExcluir.id)}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
