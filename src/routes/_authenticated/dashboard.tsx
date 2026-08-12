@@ -64,6 +64,10 @@ function Dashboard() {
   const { data: cards = [] } = useQuery({ queryKey: ["cards"], queryFn: fetchCards });
   const { data: etapas = [] } = useQuery({ queryKey: ["etapas"], queryFn: fetchEtapas });
   const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros"],
+    queryFn: fetchTodosParceiros,
+  });
 
   const atrasados = useMemo(
     () => cards.filter((c) => situacaoPrazo(c) === "atrasado"),
@@ -71,11 +75,24 @@ function Dashboard() {
   );
   const estimado = cards.reduce((s, c) => s + Number(c.custo_estimado), 0);
   const real = cards.reduce((s, c) => s + Number(c.custo_real), 0);
+  const pagoTerceiros = parceiros.reduce((s, p) => s + Number(p.valor || 0), 0);
+  const liquido = real - pagoTerceiros;
 
   const porEtapa = etapas.map((e) => ({
     nome: e.nome.length > 14 ? e.nome.slice(0, 14) + "…" : e.nome,
     cards: cards.filter((c) => c.etapa_id === e.id).length,
   }));
+
+  const porParceiro = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const p of parceiros) {
+      const nome = (p.nome || "").trim() || "Sem nome";
+      mapa.set(nome, (mapa.get(nome) ?? 0) + Number(p.valor || 0));
+    }
+    return [...mapa.entries()]
+      .map(([nome, valor]) => ({ nome, valor }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [parceiros]);
 
   return (
     <AppShell
@@ -87,7 +104,7 @@ function Dashboard() {
         </Button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           label="Projetos ativos"
           value={String(projetos.filter((p) => p.status === "ativo").length)}
@@ -95,18 +112,24 @@ function Dashboard() {
           icon={FolderKanban}
         />
         <Kpi
-          label="Cards em atraso"
-          value={String(atrasados.length)}
-          hint="Data prevista ultrapassada"
-          icon={AlertTriangle}
-          tone="danger"
-        />
-        <Kpi
           label="Valor do serviço x recebido"
           value={brl(real)}
           hint={`Valor do serviço ${brl(estimado)}`}
           icon={CheckCircle2}
           tone={real > estimado ? "danger" : "success"}
+        />
+        <Kpi
+          label="Valor pago a terceiros/prestadores"
+          value={brl(pagoTerceiros)}
+          hint={`${porParceiro.length} parceiro(s)`}
+          icon={HandCoins}
+        />
+        <Kpi
+          label="Valor líquido"
+          value={brl(liquido)}
+          hint="Valor recebido − pago a terceiros"
+          icon={Wallet}
+          tone={liquido < 0 ? "danger" : "success"}
         />
       </div>
 
@@ -125,7 +148,39 @@ function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          <h2 className="mt-8 text-sm font-semibold">
+            Valor pago por parceiro/prestador de serviço
+          </h2>
+          <div className="mt-4 h-72">
+            {porParceiro.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum pagamento a parceiros registrado.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={porParceiro}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <XAxis
+                    dataKey="nome"
+                    fontSize={11}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={70}
+                  />
+                  <YAxis fontSize={11} tickFormatter={(v) => brl(Number(v))} width={90} />
+                  <Tooltip
+                    formatter={(v) => brl(Number(v))}
+                    cursor={{ fill: "var(--muted)" }}
+                  />
+                  <Bar dataKey="valor" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </section>
+
 
         <section className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
