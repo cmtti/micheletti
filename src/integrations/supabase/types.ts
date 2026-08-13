@@ -297,6 +297,45 @@ export type Database = {
           },
         ]
       }
+      empresa_config: {
+        Row: {
+          cidade_emissao: string
+          cnpj: string
+          crea: string
+          created_at: string
+          engenheiro_crea: string
+          engenheiro_nome: string
+          engenheiro_titulo: string
+          id: string
+          razao_social: string
+          updated_at: string
+        }
+        Insert: {
+          cidade_emissao?: string
+          cnpj?: string
+          crea?: string
+          created_at?: string
+          engenheiro_crea?: string
+          engenheiro_nome?: string
+          engenheiro_titulo?: string
+          id?: string
+          razao_social?: string
+          updated_at?: string
+        }
+        Update: {
+          cidade_emissao?: string
+          cnpj?: string
+          crea?: string
+          created_at?: string
+          engenheiro_crea?: string
+          engenheiro_nome?: string
+          engenheiro_titulo?: string
+          id?: string
+          razao_social?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       etapas_kanban: {
         Row: {
           cor: string
@@ -320,6 +359,127 @@ export type Database = {
           ordem?: number
         }
         Relationships: []
+      }
+      orcamento_itens: {
+        Row: {
+          created_at: string
+          id: string
+          orcamento_id: string
+          ordem: number
+          texto: string
+          tipo: Database["public"]["Enums"]["orcamento_item_tipo"]
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          orcamento_id: string
+          ordem?: number
+          texto?: string
+          tipo: Database["public"]["Enums"]["orcamento_item_tipo"]
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          orcamento_id?: string
+          ordem?: number
+          texto?: string
+          tipo?: Database["public"]["Enums"]["orcamento_item_tipo"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_itens_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos: {
+        Row: {
+          ano: number
+          atividade: string
+          cliente_cnpj: string | null
+          cliente_id: string | null
+          cliente_nome: string
+          condicao: string | null
+          condicao_pagamento: string | null
+          created_at: string
+          created_by: string | null
+          escopo: string | null
+          id: string
+          local_obra: string | null
+          numero: string
+          observacoes: string | null
+          parcelas: number
+          prazo_entrega: string | null
+          sequencial: number
+          status: Database["public"]["Enums"]["orcamento_status"]
+          updated_at: string
+          validade: string | null
+          valor: number
+          valor_descricao: string
+        }
+        Insert: {
+          ano: number
+          atividade?: string
+          cliente_cnpj?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          condicao?: string | null
+          condicao_pagamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          escopo?: string | null
+          id?: string
+          local_obra?: string | null
+          numero: string
+          observacoes?: string | null
+          parcelas?: number
+          prazo_entrega?: string | null
+          sequencial: number
+          status?: Database["public"]["Enums"]["orcamento_status"]
+          updated_at?: string
+          validade?: string | null
+          valor?: number
+          valor_descricao?: string
+        }
+        Update: {
+          ano?: number
+          atividade?: string
+          cliente_cnpj?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          condicao?: string | null
+          condicao_pagamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          escopo?: string | null
+          id?: string
+          local_obra?: string | null
+          numero?: string
+          observacoes?: string | null
+          parcelas?: number
+          prazo_entrega?: string | null
+          sequencial?: number
+          status?: Database["public"]["Enums"]["orcamento_status"]
+          updated_at?: string
+          validade?: string | null
+          valor?: number
+          valor_descricao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -452,6 +612,8 @@ export type Database = {
     Enums: {
       anexo_status: "rascunho" | "em_revisao" | "final_aprovado"
       app_role: "admin" | "engenheiro" | "comercial" | "aprovador"
+      orcamento_item_tipo: "norma" | "atividade" | "parcela"
+      orcamento_status: "enviado" | "aprovado" | "recusado"
       prioridade: "baixa" | "media" | "alta" | "urgente"
       projeto_status: "ativo" | "concluido" | "cancelado"
     }
@@ -583,6 +745,8 @@ export const Constants = {
     Enums: {
       anexo_status: ["rascunho", "em_revisao", "final_aprovado"],
       app_role: ["admin", "engenheiro", "comercial", "aprovador"],
+      orcamento_item_tipo: ["norma", "atividade", "parcela"],
+      orcamento_status: ["enviado", "aprovado", "recusado"],
       prioridade: ["baixa", "media", "alta", "urgente"],
       projeto_status: ["ativo", "concluido", "cancelado"],
     },

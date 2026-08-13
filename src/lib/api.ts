@@ -195,6 +195,93 @@ export const fetchApoios = (projetoId?: string) =>
       : db.from("projetos_apoio").select("*").order("created_at"),
   );
 
+export type OrcamentoStatus = "enviado" | "aprovado" | "recusado";
+export type OrcamentoItemTipo = "norma" | "atividade" | "parcela";
+
+export interface EmpresaConfig {
+  id: string;
+  razao_social: string;
+  cnpj: string;
+  crea: string;
+  engenheiro_nome: string;
+  engenheiro_titulo: string;
+  engenheiro_crea: string;
+  cidade_emissao: string;
+}
+
+export interface Orcamento {
+  id: string;
+  numero: string;
+  sequencial: number;
+  ano: number;
+  cliente_id: string | null;
+  cliente_nome: string;
+  cliente_cnpj: string | null;
+  atividade: string;
+  condicao: string | null;
+  local_obra: string | null;
+  escopo: string | null;
+  validade: string | null;
+  valor: number;
+  valor_descricao: string;
+  parcelas: number;
+  condicao_pagamento: string | null;
+  prazo_entrega: string | null;
+  observacoes: string | null;
+  status: OrcamentoStatus;
+  created_at: string;
+}
+
+export interface OrcamentoItem {
+  id: string;
+  orcamento_id: string;
+  tipo: OrcamentoItemTipo;
+  texto: string;
+  valor: number;
+  ordem: number;
+}
+
+export const ORCAMENTO_STATUS_LABEL: Record<OrcamentoStatus, string> = {
+  enviado: "Enviado",
+  aprovado: "Aprovado",
+  recusado: "Recusado",
+};
+
+export const OBSERVACOES_PADRAO =
+  "Para que as atividades sejam concluídas, o contratante deverá fornecer os projetos arquitetônico e estrutural da unidade. Informações complementares poderão ser requeridas durante o desenvolvimento do projeto.";
+
+export const fetchEmpresaConfig = async () => {
+  const { data, error } = await db.from("empresa_config").select("*").limit(1).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as EmpresaConfig | null;
+};
+export const fetchOrcamentos = () =>
+  run<Orcamento[]>(db.from("orcamentos").select("*").order("created_at", { ascending: false }));
+export const fetchOrcamentoItens = (orcamentoId: string) =>
+  run<OrcamentoItem[]>(
+    db.from("orcamento_itens").select("*").eq("orcamento_id", orcamentoId).order("ordem"),
+  );
+
+/** Gera o número do orçamento no padrão SS + AAAA + MM + DD. */
+export function formatNumeroOrcamento(sequencial: number, data = new Date()) {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(sequencial)}${data.getFullYear()}${p(data.getMonth() + 1)}${p(data.getDate())}`;
+}
+
+export async function proximoSequencial(ano: number) {
+  const { data, error } = await db
+    .from("orcamentos")
+    .select("sequencial")
+    .eq("ano", ano)
+    .order("sequencial", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return ((data?.sequencial as number | undefined) ?? 0) + 1;
+}
+
+
+
 export async function insertRow<T>(table: string, values: Record<string, unknown>) {
   const { data, error } = await db.from(table).insert(values).select().single();
   if (error) throw new Error(error.message);
