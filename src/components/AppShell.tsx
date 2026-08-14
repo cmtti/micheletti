@@ -6,6 +6,8 @@ import {
   FolderKanban,
   Users,
   Contact,
+  FileText,
+  Settings,
   LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -19,9 +21,12 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/kanban", label: "Quadro Kanban", icon: KanbanSquare },
   { to: "/projetos", label: "Projetos", icon: FolderKanban },
+  { to: "/orcamentos", label: "Orçamentos", icon: FileText },
   { to: "/clientes", label: "Clientes", icon: Contact },
   { to: "/usuarios", label: "Usuários", icon: Users },
+  { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
+
 
 export function AppShell({
   title,
