@@ -9,7 +9,7 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
-import logoUrl from "@/assets/lenzee-positivo.png";
+import logoAsset from "@/assets/lenzee-positivo.png.asset.json";
 import type { EmpresaConfig, Orcamento, OrcamentoItem } from "./api";
 import { brl } from "./api";
 
@@ -37,7 +37,7 @@ function texto(text: string, opts: { bold?: boolean } = {}) {
 
 async function carregarLogo() {
   try {
-    const res = await fetch(logoUrl);
+    const res = await fetch(logoAsset.url);
     if (!res.ok) return null;
     return new Uint8Array(await res.arrayBuffer());
   } catch {
