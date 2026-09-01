@@ -37,7 +37,7 @@ function texto(text: string, opts: { bold?: boolean } = {}) {
 
 async function carregarLogo() {
   try {
-    const res = await fetch(logoUrl);
+    const res = await fetch(logoAsset.url);
     if (!res.ok) return null;
     return new Uint8Array(await res.arrayBuffer());
   } catch {
