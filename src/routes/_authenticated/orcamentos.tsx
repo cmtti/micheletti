@@ -633,6 +633,31 @@ function OrcamentosPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    title="Gerar Word"
+                    disabled={gerando === o.id}
+                    onClick={async () => {
+                      setGerando(o.id);
+                      try {
+                        const [itens, empresa] = await Promise.all([
+                          fetchOrcamentoItens(o.id),
+                          fetchEmpresaConfig(),
+                        ]);
+                        const { gerarOrcamentoDocx } = await import("@/lib/orcamento-docx");
+                        await gerarOrcamentoDocx(o, itens, empresa);
+                        toast.success("Documento Word gerado.");
+                      } catch (err) {
+                        toast.error((err as Error).message);
+                      } finally {
+                        setGerando(null);
+                      }
+                    }}
+                  >
+                    <FileDown className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     title="Duplicar"
                     onClick={() => carregarBase(o, "duplicar")}
                   >
