@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -507,6 +507,8 @@ function OrcamentosPage() {
   >(undefined);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | OrcamentoStatus>("todos");
+  const [gerando, setGerando] = useState<string | null>(null);
+
 
   const lista = useMemo(
     () =>
@@ -630,6 +632,31 @@ function OrcamentosPage() {
                   <Button variant="ghost" size="sm" onClick={() => carregarBase(o, "editar")}>
                     Editar
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Gerar Word"
+                    disabled={gerando === o.id}
+                    onClick={async () => {
+                      setGerando(o.id);
+                      try {
+                        const [itens, empresa] = await Promise.all([
+                          fetchOrcamentoItens(o.id),
+                          fetchEmpresaConfig(),
+                        ]);
+                        const { gerarOrcamentoDocx } = await import("@/lib/orcamento-docx");
+                        await gerarOrcamentoDocx(o, itens, empresa);
+                        toast.success("Documento Word gerado.");
+                      } catch (err) {
+                        toast.error((err as Error).message);
+                      } finally {
+                        setGerando(null);
+                      }
+                    }}
+                  >
+                    <FileDown className="h-4 w-4" />
+                  </Button>
+
                   <Button
                     variant="ghost"
                     size="icon"
