@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -507,6 +507,8 @@ function OrcamentosPage() {
   >(undefined);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | OrcamentoStatus>("todos");
+  const [gerando, setGerando] = useState<string | null>(null);
+
 
   const lista = useMemo(
     () =>
