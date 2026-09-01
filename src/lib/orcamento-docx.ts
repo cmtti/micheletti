@@ -9,7 +9,7 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
-import logoUrl from "@/assets/lenzee-positivo.png";
+import logoAsset from "@/assets/lenzee-positivo.png.asset.json";
 import type { EmpresaConfig, Orcamento, OrcamentoItem } from "./api";
 import { brl } from "./api";
 
