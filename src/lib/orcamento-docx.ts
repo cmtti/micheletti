@@ -2,47 +2,99 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
-  HeadingLevel,
+  Header,
   ImageRun,
   LevelFormat,
   Packer,
+  PageBreak,
   Paragraph,
+  ShadingType,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  VerticalAlign,
+  WidthType,
 } from "docx";
-import logoAsset from "@/assets/lenzee-positivo.png.asset.json";
+import logoAsset from "@/assets/lenzee-logo-header.png.asset.json";
+import assinaturaAsset from "@/assets/lenzee-assinatura.png.asset.json";
 import type { EmpresaConfig, Orcamento, OrcamentoItem } from "./api";
 import { brl } from "./api";
 
-const AZUL = "0093D3";
-const NAVY = "12172B";
+const NAVY = "0A0A46";
+const CINZA = "7A7A7A";
+const CONTENT_WIDTH = 9638;
+
+const MESES = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
 
 const dataBR = (iso?: string | null) =>
   iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR") : "";
 
-function titulo(text: string) {
+/** Parágrafo com label em negrito no início e o restante em texto normal. */
+function linhaLabel(label: string, valor: string, opts: { after?: number } = {}) {
   return new Paragraph({
-    spacing: { before: 280, after: 120 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: AZUL, space: 2 } },
-    children: [new TextRun({ text: text.toUpperCase(), bold: true, color: NAVY, size: 24 })],
-  });
-}
-
-function texto(text: string, opts: { bold?: boolean } = {}) {
-  return new Paragraph({
-    spacing: { after: 100 },
+    spacing: { after: opts.after ?? 160 },
     alignment: AlignmentType.JUSTIFIED,
-    children: [new TextRun({ text, bold: opts.bold })],
+    children: [
+      new TextRun({ text: label, bold: true }),
+      new TextRun({ text: valor ? ` ${valor}` : "" }),
+    ],
   });
 }
 
-async function carregarLogo() {
+function tituloSecao(text: string) {
+  return new Paragraph({
+    spacing: { before: 280, after: 140 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: NAVY, space: 2 } },
+    children: [new TextRun({ text, bold: true, color: NAVY, size: 24 })],
+  });
+}
+
+function paragrafo(text: string, after = 160) {
+  return new Paragraph({
+    spacing: { after },
+    alignment: AlignmentType.JUSTIFIED,
+    children: [new TextRun(text)],
+  });
+}
+
+async function carregarImagem(url: string) {
   try {
-    const res = await fetch(logoAsset.url);
+    const res = await fetch(url);
     if (!res.ok) return null;
     return new Uint8Array(await res.arrayBuffer());
   } catch {
     return null;
   }
+}
+
+const borda = { style: BorderStyle.SINGLE, size: 4, color: "9A9A9A" };
+const bordas = { top: borda, bottom: borda, left: borda, right: borda };
+const margens = { top: 100, bottom: 100, left: 140, right: 140 };
+
+function celula(children: Paragraph[], width: number, columnSpan?: number) {
+  return new TableCell({
+    borders: bordas,
+    margins: margens,
+    width: { size: width, type: WidthType.DXA },
+    verticalAlign: VerticalAlign.CENTER,
+    shading: { fill: "FFFFFF", type: ShadingType.CLEAR, color: "auto" },
+    ...(columnSpan ? { columnSpan } : {}),
+    children,
+  });
 }
 
 export async function gerarOrcamentoDocx(
@@ -53,163 +105,266 @@ export async function gerarOrcamentoDocx(
   const normas = itens.filter((i) => i.tipo === "norma");
   const atividades = itens.filter((i) => i.tipo === "atividade");
   const parcelas = itens.filter((i) => i.tipo === "parcela");
-  const logo = await carregarLogo();
+  const [logo, assinatura] = await Promise.all([
+    carregarImagem(logoAsset.url),
+    carregarImagem(assinaturaAsset.url),
+  ]);
 
-  const children: Paragraph[] = [];
+  const emissao = new Date(orcamento.created_at);
+  const cidade = empresa?.cidade_emissao ?? "";
 
-  if (logo) {
+  const logoParagraph = (width: number) =>
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 120 },
+      children: logo
+        ? [
+            new ImageRun({
+              type: "png",
+              data: logo,
+              transformation: { width, height: Math.round((width * 314) / 1700) },
+              altText: {
+                title: "Lenzee",
+                description: "Logotipo Lenzee Engenharia Elétrica",
+                name: "Lenzee",
+              },
+            }),
+          ]
+        : [new TextRun({ text: "LENZEE", bold: true, color: NAVY, size: 32 })],
+    });
+
+  const children: (Paragraph | Table)[] = [];
+
+  /* ---------- Capa ---------- */
+  children.push(
+    logoParagraph(420),
+    new Paragraph({ spacing: { before: 2400 }, children: [] }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({ text: `Proposta comercial ${orcamento.numero}`, size: 30, color: NAVY }),
+      ],
+    }),
+    new Paragraph({ spacing: { before: 3200 }, children: [] }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new TextRun(
+          `${cidade}, ${MESES[emissao.getMonth()]} de ${emissao.getFullYear()}.`,
+        ),
+      ],
+    }),
+    new Paragraph({ children: [new PageBreak()] }),
+  );
+
+  /* ---------- Identificação da empresa ---------- */
+  if (empresa) {
+    children.push(
+      paragrafo(`${empresa.razao_social}.`, 0),
+      paragrafo(`CNPJ: ${empresa.cnpj}.`, 0),
+      paragrafo(`Reg. CREA-SP: ${empresa.crea}.`, 240),
+      new Paragraph({
+        spacing: { after: 60 },
+        children: [new TextRun({ text: "Engenheiro responsável:", bold: true })],
+      }),
+      paragrafo(
+        `${empresa.engenheiro_titulo}: ${empresa.engenheiro_nome}. Reg. CREA: ${empresa.engenheiro_crea}`,
+        280,
+      ),
+    );
+  }
+
+  /* ---------- Dados do cliente ---------- */
+  children.push(linhaLabel("Att.:", `${orcamento.cliente_nome}.`, { after: 240 }));
+  if (orcamento.cliente_cnpj) children.push(linhaLabel("CNPJ:", `${orcamento.cliente_cnpj}.`));
+  children.push(linhaLabel("Atividade:", `${orcamento.atividade}.`));
+  if (orcamento.condicao) children.push(linhaLabel("Condição:", `${orcamento.condicao}.`));
+  if (orcamento.local_obra) children.push(linhaLabel("Local:", `${orcamento.local_obra}.`));
+
+  /* ---------- Escopo ---------- */
+  if (orcamento.escopo || normas.length) {
+    children.push(tituloSecao("Escopo da proposta:"));
+    if (orcamento.escopo) children.push(paragrafo(orcamento.escopo));
+    if (normas.length) {
+      children.push(paragrafo("Normas técnicas aplicáveis:", 80));
+      normas.forEach((n) =>
+        children.push(
+          new Paragraph({
+            numbering: { reference: "quadrados", level: 0 },
+            spacing: { after: 80 },
+            children: [new TextRun(n.texto)],
+          }),
+        ),
+      );
+    }
+  }
+
+  /* ---------- Atividades ---------- */
+  if (atividades.length) {
+    children.push(tituloSecao("Atividades para o projeto das instalações elétricas:"));
+    atividades.forEach((a) =>
+      children.push(
+        new Paragraph({
+          numbering: { reference: "quadrados", level: 0 },
+          spacing: { after: 100 },
+          children: [new TextRun(a.texto)],
+        }),
+      ),
+    );
+  }
+
+  /* ---------- Caixa de validade + investimento ---------- */
+  const colEsq = Math.round(CONTENT_WIDTH * 0.65);
+  const colDir = CONTENT_WIDTH - colEsq;
+  const linhas: TableRow[] = [];
+
+  if (orcamento.validade) {
+    linhas.push(
+      new TableRow({
+        children: [
+          celula(
+            [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Validade da proposta: ", bold: true }),
+                  new TextRun(`${dataBR(orcamento.validade)}.`),
+                ],
+              }),
+            ],
+            CONTENT_WIDTH,
+            2,
+          ),
+        ],
+      }),
+    );
+  }
+
+  linhas.push(
+    new TableRow({
+      children: [
+        celula(
+          [
+            new Paragraph({
+              children: [new TextRun({ text: `${orcamento.valor_descricao}.`, bold: true })],
+            }),
+          ],
+          colEsq,
+        ),
+        celula(
+          [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              children: [new TextRun({ text: brl(Number(orcamento.valor)), bold: true })],
+            }),
+          ],
+          colDir,
+        ),
+      ],
+    }),
+  );
+
+  parcelas.forEach((p, i) =>
+    linhas.push(
+      new TableRow({
+        children: [
+          celula([new Paragraph(`Parcela ${i + 1}`)], colEsq),
+          celula(
+            [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: brl(Number(p.valor)), bold: true })],
+              }),
+            ],
+            colDir,
+          ),
+        ],
+      }),
+    ),
+  );
+
+  children.push(
+    new Paragraph({ spacing: { before: 240 }, children: [] }),
+    new Table({
+      width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+      columnWidths: [colEsq, colDir],
+      rows: linhas,
+    }),
+    new Paragraph({ spacing: { after: 240 }, children: [] }),
+  );
+
+  /* ---------- Pagamento / prazo / observação ---------- */
+  const textoPagamento =
+    orcamento.condicao_pagamento ||
+    (orcamento.parcelas > 1
+      ? `o valor de investimento poderá ser parcelado em até ${orcamento.parcelas} vezes.`
+      : "pagamento à vista.");
+  children.push(linhaLabel("Proposta de pagamento:", textoPagamento));
+
+  if (orcamento.prazo_entrega) {
+    children.push(linhaLabel("Prazo para entrega do material:", orcamento.prazo_entrega));
+  }
+  if (orcamento.observacoes) {
+    children.push(linhaLabel("Observação:", orcamento.observacoes));
+  }
+
+  /* ---------- Fechamento ---------- */
+  children.push(
+    paragrafo("Em caso de dúvidas, por favor nos consulte.", 200),
+    paragrafo("Sem mais, por ora;", 320),
+  );
+
+  /* ---------- Assinatura ---------- */
+  if (assinatura) {
     children.push(
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 120 },
+        alignment: AlignmentType.RIGHT,
         children: [
           new ImageRun({
             type: "png",
-            data: logo,
-            transformation: { width: 180, height: 60 },
-            altText: { title: "Lenzee", description: "Logotipo Lenzee", name: "Lenzee" },
+            data: assinatura,
+            transformation: { width: 300, height: Math.round((300 * 270) / 1452) },
+            altText: {
+              title: "Assinatura",
+              description: "Assinatura do engenheiro responsável",
+              name: "Assinatura",
+            },
           }),
         ],
       }),
     );
-  }
-
-  if (empresa) {
+  } else if (empresa) {
     children.push(
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: empresa.razao_social, bold: true, color: NAVY, size: 24 })],
+        alignment: AlignmentType.RIGHT,
+        children: [new TextRun({ text: empresa.engenheiro_nome, bold: true, color: NAVY, size: 30 })],
       }),
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 240 },
+        alignment: AlignmentType.RIGHT,
         children: [
-          new TextRun({
-            text: `CNPJ: ${empresa.cnpj}  |  Reg. CREA-SP: ${empresa.crea}`,
-            size: 18,
-          }),
+          new TextRun({ text: empresa.engenheiro_titulo, italics: true, color: CINZA, size: 18 }),
         ],
       }),
-    );
-  }
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      spacing: { after: 120 },
-      children: [
-        new TextRun({
-          text: `${empresa?.cidade_emissao ?? ""}, ${new Date(orcamento.created_at).toLocaleDateString("pt-BR")}`,
-        }),
-      ],
-    }),
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 160 },
-      children: [
-        new TextRun({ text: `Proposta comercial nº ${orcamento.numero}`, bold: true, color: NAVY }),
-      ],
-    }),
-    texto(`Att.: ${orcamento.cliente_nome}`, { bold: true }),
-  );
-
-  if (orcamento.cliente_cnpj) children.push(texto(`CNPJ: ${orcamento.cliente_cnpj}`));
-  children.push(texto(`Atividade: ${orcamento.atividade}`));
-  if (orcamento.condicao) children.push(texto(`Condição: ${orcamento.condicao}`));
-  if (orcamento.local_obra) children.push(texto(`Local: ${orcamento.local_obra}`));
-
-  if (orcamento.escopo) {
-    children.push(titulo("Escopo da proposta"), texto(orcamento.escopo));
-  }
-
-  if (normas.length) {
-    children.push(titulo("Normas técnicas aplicáveis"));
-    normas.forEach((n) =>
-      children.push(
-        new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun(n.texto)] }),
-      ),
-    );
-  }
-
-  if (atividades.length) {
-    children.push(titulo("Atividades do projeto"));
-    atividades.forEach((a) =>
-      children.push(
-        new Paragraph({ numbering: { reference: "numeros", level: 0 }, children: [new TextRun(a.texto)] }),
-      ),
-    );
-  }
-
-  children.push(
-    titulo("Investimento"),
-    texto(`${orcamento.valor_descricao}: ${brl(Number(orcamento.valor))}`, { bold: true }),
-  );
-  if (orcamento.validade) children.push(texto(`Validade da proposta: ${dataBR(orcamento.validade)}`));
-
-  children.push(titulo("Condição de pagamento"));
-  if (parcelas.length) {
-    parcelas.forEach((p, i) =>
-      children.push(
-        new Paragraph({
-          numbering: { reference: "bullets", level: 0 },
-          children: [new TextRun(`Parcela ${i + 1}: ${brl(Number(p.valor))}`)],
-        }),
-      ),
-    );
-  } else {
-    children.push(texto(`${orcamento.parcelas}x de ${brl(Number(orcamento.valor) / Math.max(1, orcamento.parcelas))}`));
-  }
-  if (orcamento.condicao_pagamento) children.push(texto(orcamento.condicao_pagamento));
-
-  if (orcamento.prazo_entrega) {
-    children.push(titulo("Prazo de entrega"), texto(orcamento.prazo_entrega));
-  }
-  if (orcamento.observacoes) {
-    children.push(titulo("Observações"), texto(orcamento.observacoes));
-  }
-
-  if (empresa) {
-    children.push(
-      new Paragraph({ spacing: { before: 600 }, alignment: AlignmentType.CENTER, children: [new TextRun("__________________________________")] }),
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: empresa.engenheiro_nome, bold: true })],
-      }),
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
+        alignment: AlignmentType.RIGHT,
         children: [
-          new TextRun({
-            text: `${empresa.engenheiro_titulo} — Reg. CREA: ${empresa.engenheiro_crea}`,
-            size: 18,
-          }),
+          new TextRun({ text: `CREA ${empresa.engenheiro_crea}`, color: CINZA, size: 18 }),
         ],
       }),
     );
   }
 
   const doc = new Document({
-    styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
+    styles: { default: { document: { run: { font: "Arial", size: 22, color: "1A1A1A" } } } },
     numbering: {
       config: [
         {
-          reference: "bullets",
+          reference: "quadrados",
           levels: [
             {
               level: 0,
               format: LevelFormat.BULLET,
-              text: "•",
-              alignment: AlignmentType.LEFT,
-              style: { paragraph: { indent: { left: 720, hanging: 360 } } },
-            },
-          ],
-        },
-        {
-          reference: "numeros",
-          levels: [
-            {
-              level: 0,
-              format: LevelFormat.DECIMAL,
-              text: "%1.",
+              text: "▪",
               alignment: AlignmentType.LEFT,
               style: { paragraph: { indent: { left: 720, hanging: 360 } } },
             },
@@ -222,8 +377,13 @@ export async function gerarOrcamentoDocx(
         properties: {
           page: {
             size: { width: 11906, height: 16838 },
-            margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
+            margin: { top: 1500, right: 1134, bottom: 1134, left: 1134, header: 400 },
           },
+          titlePage: true,
+        },
+        headers: {
+          default: new Header({ children: [logoParagraph(300)] }),
+          first: new Header({ children: [] }),
         },
         children,
       },
