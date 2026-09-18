@@ -99,16 +99,7 @@ function Dashboard() {
       description="Indicadores gerais da carteira de projetos elétricos"
       actions={
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={alternarValores}
-            aria-pressed={ocultar}
-            aria-label={ocultar ? "Mostrar valores" : "Ocultar valores"}
-          >
-            {ocultar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {ocultar ? "Mostrar valores" : "Ocultar valores"}
-          </Button>
+          <ToggleValoresButton />
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Exportar PDF
           </Button>
