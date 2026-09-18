@@ -70,17 +70,7 @@ function Dashboard() {
     queryFn: fetchTodosParceiros,
   });
 
-  const [ocultar, setOcultar] = useState(false);
-  useEffect(() => {
-    setOcultar(localStorage.getItem(STORAGE_KEY) === "1");
-  }, []);
-  function alternarValores() {
-    setOcultar((v) => {
-      localStorage.setItem(STORAGE_KEY, v ? "0" : "1");
-      return !v;
-    });
-  }
-  const money = (v: number) => (ocultar ? MASCARA : brl(v));
+  const { valoresOcultos: ocultar, formatarValor: money } = useValuesVisibility();
 
   const estimado = cards.reduce((s, c) => s + Number(c.custo_estimado), 0);
   const real = cards.reduce((s, c) => s + Number(c.custo_real), 0);
