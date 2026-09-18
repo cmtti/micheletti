@@ -1,7 +1,15 @@
-import { useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  FolderKanban,
+  HandCoins,
+  Printer,
+  Wallet,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -13,21 +21,20 @@ import {
 } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   brl,
-  dataBR,
   fetchCards,
   fetchEtapas,
   fetchProjetos,
   fetchTodosParceiros,
-  situacaoPrazo,
-  diasAtraso,
 } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
+
+const STORAGE_KEY = "dashboard:ocultar-valores";
+const MASCARA = "R$ ••••••";
 
 function Kpi({
   label,
@@ -69,10 +76,18 @@ function Dashboard() {
     queryFn: fetchTodosParceiros,
   });
 
-  const atrasados = useMemo(
-    () => cards.filter((c) => situacaoPrazo(c) === "atrasado"),
-    [cards],
-  );
+  const [ocultar, setOcultar] = useState(false);
+  useEffect(() => {
+    setOcultar(localStorage.getItem(STORAGE_KEY) === "1");
+  }, []);
+  function alternarValores() {
+    setOcultar((v) => {
+      localStorage.setItem(STORAGE_KEY, v ? "0" : "1");
+      return !v;
+    });
+  }
+  const money = (v: number) => (ocultar ? MASCARA : brl(v));
+
   const estimado = cards.reduce((s, c) => s + Number(c.custo_estimado), 0);
   const real = cards.reduce((s, c) => s + Number(c.custo_real), 0);
   const pagoTerceiros = parceiros.reduce((s, p) => s + Number(p.valor || 0), 0);
@@ -99,9 +114,21 @@ function Dashboard() {
       title="Dashboard"
       description="Indicadores gerais da carteira de projetos elétricos"
       actions={
-        <Button variant="outline" size="sm" onClick={() => window.print()}>
-          <Printer className="h-4 w-4" /> Exportar PDF
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={alternarValores}
+            aria-pressed={ocultar}
+            aria-label={ocultar ? "Mostrar valores" : "Ocultar valores"}
+          >
+            {ocultar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {ocultar ? "Mostrar valores" : "Ocultar valores"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="h-4 w-4" /> Exportar PDF
+          </Button>
+        </>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -113,29 +140,28 @@ function Dashboard() {
         />
         <Kpi
           label="Valor do serviço x recebido"
-          value={brl(real)}
-          hint={`Valor do serviço ${brl(estimado)}`}
+          value={money(real)}
+          hint={`Valor do serviço ${money(estimado)}`}
           icon={CheckCircle2}
           tone={real > estimado ? "danger" : "success"}
         />
         <Kpi
           label="Valor pago a terceiros/prestadores"
-          value={brl(pagoTerceiros)}
+          value={money(pagoTerceiros)}
           hint={`${porParceiro.length} parceiro(s)`}
           icon={HandCoins}
         />
         <Kpi
           label="Valor líquido"
-          value={brl(liquido)}
+          value={money(liquido)}
           hint="Valor recebido − pago a terceiros"
           icon={Wallet}
           tone={liquido < 0 ? "danger" : "success"}
         />
       </div>
 
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-5">
-        <section className="rounded-lg border border-border bg-card p-5 lg:col-span-3">
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <section className="rounded-lg border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">Quantidade de cards por etapa</h2>
           <div className="mt-4 h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -148,14 +174,20 @@ function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </section>
 
-          <h2 className="mt-8 text-sm font-semibold">
+        <section className="rounded-lg border border-border bg-card p-5">
+          <h2 className="text-sm font-semibold">
             Valor pago por parceiro/prestador de serviço
           </h2>
           <div className="mt-4 h-72">
             {porParceiro.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhum pagamento a parceiros registrado.
+              </p>
+            ) : ocultar ? (
+              <p className="text-sm text-muted-foreground">
+                Valores ocultos. Clique em “Mostrar valores” para exibir o gráfico.
               </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -179,34 +211,6 @@ function Dashboard() {
               </ResponsiveContainer>
             )}
           </div>
-        </section>
-
-
-        <section className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Cards em atraso</h2>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/kanban">Ver quadro</Link>
-            </Button>
-          </div>
-          <ul className="mt-3 divide-y divide-border">
-            {atrasados.slice(0, 8).map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{c.titulo}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Previsto para {dataBR(c.fim_previsto)}
-                  </p>
-                </div>
-                <Badge className="bg-danger text-danger-foreground">
-                  {diasAtraso(c)}d
-                </Badge>
-              </li>
-            ))}
-            {atrasados.length === 0 && (
-              <li className="py-6 text-sm text-muted-foreground">Nenhum card em atraso.</li>
-            )}
-          </ul>
         </section>
       </div>
     </AppShell>
