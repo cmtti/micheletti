@@ -14,6 +14,10 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import {
+  ToggleValoresButton,
+  useValuesVisibility,
+} from "@/components/ValuesVisibility";
+import {
   brl,
   fetchCards,
   fetchEtapas,
@@ -25,8 +29,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const STORAGE_KEY = "dashboard:ocultar-valores";
-const MASCARA = "R$ ••••••";
 
 function Kpi({
   label,
