@@ -1,15 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  FolderKanban,
-  HandCoins,
-  Printer,
-  Wallet,
-} from "lucide-react";
+import { CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
 import {
   Bar,
   BarChart,
