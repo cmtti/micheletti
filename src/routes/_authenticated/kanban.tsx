@@ -56,6 +56,8 @@ function KanbanPage() {
   const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
 
+  const { formatarValor } = useValuesVisibility();
+
   const [projetoFiltro, setProjetoFiltro] = useState("todos");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState<CardItem | null>(null);
