@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  brl,
   deleteRow,
   fetchCards,
   fetchEtapas,
