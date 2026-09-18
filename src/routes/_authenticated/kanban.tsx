@@ -322,7 +322,8 @@ function KanbanPage() {
                         <span>{resp?.nome ?? "Sem responsável"}</span>
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        {brl(Number(card.custo_real))} / {brl(Number(card.custo_estimado))}
+                        {formatarValor(Number(card.custo_real))} /{" "}
+                        {formatarValor(Number(card.custo_estimado))}
                       </p>
 
                     </article>
