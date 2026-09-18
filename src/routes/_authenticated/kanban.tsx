@@ -8,6 +8,10 @@ import { CardDetailDialog } from "@/components/CardDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  ToggleValoresButton,
+  useValuesVisibility,
+} from "@/components/ValuesVisibility";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -27,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  brl,
   deleteRow,
   fetchCards,
   fetchEtapas,
@@ -51,6 +54,8 @@ function KanbanPage() {
   const { data: cards = [] } = useQuery({ queryKey: ["cards"], queryFn: fetchCards });
   const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
+
+  const { formatarValor } = useValuesVisibility();
 
   const [projetoFiltro, setProjetoFiltro] = useState("todos");
   const [busca, setBusca] = useState("");
@@ -200,6 +205,7 @@ function KanbanPage() {
           <Button variant="outline" size="sm" onClick={novaEtapa}>
             <Plus className="h-4 w-4" /> Etapa
           </Button>
+          <ToggleValoresButton />
         </>
       }
     >
@@ -315,7 +321,8 @@ function KanbanPage() {
                         <span>{resp?.nome ?? "Sem responsável"}</span>
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        {brl(Number(card.custo_real))} / {brl(Number(card.custo_estimado))}
+                        {formatarValor(Number(card.custo_real))} /{" "}
+                        {formatarValor(Number(card.custo_estimado))}
                       </p>
 
                     </article>

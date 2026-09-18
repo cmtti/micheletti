@@ -1,15 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  FolderKanban,
-  HandCoins,
-  Printer,
-  Wallet,
-} from "lucide-react";
+import { CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -22,6 +14,10 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import {
+  ToggleValoresButton,
+  useValuesVisibility,
+} from "@/components/ValuesVisibility";
+import {
   brl,
   fetchCards,
   fetchEtapas,
@@ -33,8 +29,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const STORAGE_KEY = "dashboard:ocultar-valores";
-const MASCARA = "R$ ••••••";
 
 function Kpi({
   label,
@@ -76,17 +70,7 @@ function Dashboard() {
     queryFn: fetchTodosParceiros,
   });
 
-  const [ocultar, setOcultar] = useState(false);
-  useEffect(() => {
-    setOcultar(localStorage.getItem(STORAGE_KEY) === "1");
-  }, []);
-  function alternarValores() {
-    setOcultar((v) => {
-      localStorage.setItem(STORAGE_KEY, v ? "0" : "1");
-      return !v;
-    });
-  }
-  const money = (v: number) => (ocultar ? MASCARA : brl(v));
+  const { valoresOcultos: ocultar, formatarValor: money } = useValuesVisibility();
 
   const estimado = cards.reduce((s, c) => s + Number(c.custo_estimado), 0);
   const real = cards.reduce((s, c) => s + Number(c.custo_real), 0);
@@ -115,16 +99,7 @@ function Dashboard() {
       description="Indicadores gerais da carteira de projetos elétricos"
       actions={
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={alternarValores}
-            aria-pressed={ocultar}
-            aria-label={ocultar ? "Mostrar valores" : "Ocultar valores"}
-          >
-            {ocultar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {ocultar ? "Mostrar valores" : "Ocultar valores"}
-          </Button>
+          <ToggleValoresButton />
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Exportar PDF
           </Button>
