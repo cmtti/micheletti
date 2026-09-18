@@ -206,6 +206,7 @@ function KanbanPage() {
           <Button variant="outline" size="sm" onClick={novaEtapa}>
             <Plus className="h-4 w-4" /> Etapa
           </Button>
+          <ToggleValoresButton />
         </>
       }
     >
