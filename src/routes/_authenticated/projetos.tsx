@@ -42,6 +42,7 @@ import {
   fetchClientes,
   fetchProfiles,
   fetchProjetos,
+  fetchTiposProjeto,
   insertRow,
   situacaoPrazo,
   updateRow,
@@ -58,6 +59,111 @@ const STATUS_LABEL: Record<ProjetoStatus, string> = {
   concluido: "Concluído",
   cancelado: "Cancelado",
 };
+
+function TipoField({ tipo, setTipo }: { tipo: string; setTipo: (v: string) => void }) {
+  const qc = useQueryClient();
+  const { data: tipos = [] } = useQuery({ queryKey: ["tipos_projeto"], queryFn: fetchTiposProjeto });
+  const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
+  const [novo, setNovo] = useState<string | null>(null);
+  const nomes = tipos.map((t) => t.nome);
+  const opcoes = tipo && !nomes.includes(tipo) ? [...nomes, tipo] : nomes;
+
+  async function adicionar() {
+    const nome = (novo ?? "").trim().toLowerCase();
+    if (!nome) return;
+    try {
+      if (!nomes.includes(nome)) await insertRow("tipos_projeto", { nome });
+      qc.invalidateQueries({ queryKey: ["tipos_projeto"] });
+      setTipo(nome);
+      setNovo(null);
+      toast.success("Tipo adicionado.");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function excluir(t: { id: string; nome: string }) {
+    const emUso = projetos.filter((p) => p.tipo === t.nome).length;
+    const msg = emUso
+      ? `O tipo "${t.nome}" está em uso por ${emUso} projeto(s). Esses projetos manterão o tipo, mas ele sairá da lista para novos cadastros. Excluir?`
+      : `Excluir o tipo "${t.nome}"?`;
+    if (!confirm(msg)) return;
+    try {
+      await deleteRow("tipos_projeto", t.id);
+      qc.invalidateQueries({ queryKey: ["tipos_projeto"] });
+      toast.success("Tipo excluído.");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label>Tipo</Label>
+      {novo !== null ? (
+        <div className="flex gap-2">
+          <Input
+            autoFocus
+            placeholder="Novo tipo"
+            value={novo}
+            onChange={(e) => setNovo(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                adicionar();
+              }
+            }}
+          />
+          <Button type="button" size="sm" onClick={adicionar}>
+            Salvar
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setNovo(null)}>
+            Cancelar
+          </Button>
+        </div>
+      ) : (
+        <Select value={tipo} onValueChange={(v) => (v === "__novo__" ? setNovo("") : setTipo(v))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione" />
+          </SelectTrigger>
+          <SelectContent>
+            {opcoes.map((nome) => {
+              const t = tipos.find((x) => x.nome === nome);
+              return (
+                <div key={nome} className="flex items-center">
+                  <SelectItem value={nome} className="flex-1 capitalize">
+                    {nome}
+                  </SelectItem>
+                  {t && (
+                    <button
+                      type="button"
+                      aria-label={`Excluir tipo ${nome}`}
+                      className="p-1.5 text-muted-foreground hover:text-destructive"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        excluir(t);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <SelectItem value="__novo__" className="text-primary">
+              + Adicionar novo tipo
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+}
+
 
 function ProjetoForm({
   projeto,
@@ -116,21 +222,7 @@ function ProjetoForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5">
-          <Label>Tipo</Label>
-          <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS_PROJETO.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <TipoField tipo={tipo} setTipo={setTipo} />
         <div className="space-y-1.5">
           <Label>Status</Label>
           <Select value={status} onValueChange={(v) => setStatus(v as ProjetoStatus)}>
@@ -334,7 +426,7 @@ function ProjetosPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os tipos</SelectItem>
-            {TIPOS_PROJETO.map((t) => (
+            {[...new Set(projetos.map((p) => p.tipo))].sort().map((t) => (
               <SelectItem key={t} value={t}>
                 {t}
               </SelectItem>

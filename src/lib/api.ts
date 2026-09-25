@@ -195,6 +195,13 @@ export const fetchApoios = (projetoId?: string) =>
       : db.from("projetos_apoio").select("*").order("created_at"),
   );
 
+export interface TipoProjeto {
+  id: string;
+  nome: string;
+}
+export const fetchTiposProjeto = () =>
+  run<TipoProjeto[]>(db.from("tipos_projeto").select("id, nome").order("nome"));
+
 export type OrcamentoStatus = "enviado" | "aprovado" | "recusado";
 export type OrcamentoItemTipo = "norma" | "atividade" | "parcela";
 
