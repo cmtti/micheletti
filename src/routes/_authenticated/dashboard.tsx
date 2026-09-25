@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
+import { CheckCircle2, FileText, FolderKanban, HandCoins, Printer, Wallet } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -72,9 +72,21 @@ function Dashboard() {
 
   const { valoresOcultos: ocultar, formatarValor: money } = useValuesVisibility();
 
-  const estimado = cards.reduce((s, c) => s + Number(c.custo_estimado), 0);
-  const real = cards.reduce((s, c) => s + Number(c.custo_real), 0);
-  const pagoTerceiros = parceiros.reduce((s, p) => s + Number(p.valor || 0), 0);
+  const etapaOrcamentoIds = new Set(
+    etapas
+      .filter((e) => e.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("orcamento"))
+      .map((e) => e.id),
+  );
+  const cardsOrcamento = cards.filter((c) => c.etapa_id && etapaOrcamentoIds.has(c.etapa_id));
+  const cardsServico = cards.filter((c) => !(c.etapa_id && etapaOrcamentoIds.has(c.etapa_id)));
+  const idsServico = new Set(cardsServico.map((c) => c.id));
+  const emOrcamento = cardsOrcamento.reduce((s, c) => s + Number(c.custo_estimado), 0);
+  const projetosOrcamento = new Set(cardsOrcamento.map((c) => c.projeto_id)).size;
+  const estimado = cardsServico.reduce((s, c) => s + Number(c.custo_estimado), 0);
+  const real = cardsServico.reduce((s, c) => s + Number(c.custo_real), 0);
+  const pagoTerceiros = parceiros
+    .filter((p) => idsServico.has(p.card_id))
+    .reduce((s, p) => s + Number(p.valor || 0), 0);
   const liquido = real - pagoTerceiros;
 
   const porEtapa = etapas.map((e) => ({
@@ -106,12 +118,18 @@ function Dashboard() {
         </>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi
           label="Projetos ativos"
           value={String(projetos.filter((p) => p.status === "ativo").length)}
           hint={`${projetos.length} projetos no total`}
           icon={FolderKanban}
+        />
+        <Kpi
+          label="Em orçamento"
+          value={money(emOrcamento)}
+          hint={`${projetosOrcamento} projeto(s) em orçamento`}
+          icon={FileText}
         />
         <Kpi
           label="Valor do serviço x recebido"
