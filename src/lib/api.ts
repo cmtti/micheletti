@@ -236,8 +236,21 @@ export interface Orcamento {
   prazo_entrega: string | null;
   observacoes: string | null;
   status: OrcamentoStatus;
+  tipos: string[];
   created_at: string;
 }
+
+export interface OrcamentoModelo {
+  id: string;
+  tipo: string;
+  escopo: string;
+  normas: string[];
+  atividades: string[];
+  rotulo_valor: string;
+  observacao: string;
+}
+export const fetchOrcamentoModelos = () =>
+  run<OrcamentoModelo[]>(db.from("orcamento_modelos").select("*").order("tipo"));
 
 export interface OrcamentoItem {
   id: string;

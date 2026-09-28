@@ -398,6 +398,42 @@ export type Database = {
           },
         ]
       }
+      orcamento_modelos: {
+        Row: {
+          atividades: string[]
+          created_at: string
+          escopo: string
+          id: string
+          normas: string[]
+          observacao: string
+          rotulo_valor: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          atividades?: string[]
+          created_at?: string
+          escopo?: string
+          id?: string
+          normas?: string[]
+          observacao?: string
+          rotulo_valor?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          atividades?: string[]
+          created_at?: string
+          escopo?: string
+          id?: string
+          normas?: string[]
+          observacao?: string
+          rotulo_valor?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orcamentos: {
         Row: {
           ano: number
@@ -418,6 +454,7 @@ export type Database = {
           prazo_entrega: string | null
           sequencial: number
           status: Database["public"]["Enums"]["orcamento_status"]
+          tipos: string[]
           updated_at: string
           validade: string | null
           valor: number
@@ -442,6 +479,7 @@ export type Database = {
           prazo_entrega?: string | null
           sequencial: number
           status?: Database["public"]["Enums"]["orcamento_status"]
+          tipos?: string[]
           updated_at?: string
           validade?: string | null
           valor?: number
@@ -466,6 +504,7 @@ export type Database = {
           prazo_entrega?: string | null
           sequencial?: number
           status?: Database["public"]["Enums"]["orcamento_status"]
+          tipos?: string[]
           updated_at?: string
           validade?: string | null
           valor?: number
