@@ -37,7 +37,9 @@ import {
   fetchClientes,
   fetchEmpresaConfig,
   fetchOrcamentoItens,
+  fetchOrcamentoModelos,
   fetchOrcamentos,
+  fetchTiposProjeto,
   formatNumeroOrcamento,
   insertRow,
   proximoSequencial,
@@ -46,6 +48,7 @@ import {
   ORCAMENTO_STATUS_LABEL,
   type Orcamento,
   type OrcamentoItem,
+  type OrcamentoModelo,
   type OrcamentoStatus,
 } from "@/lib/api";
 
@@ -71,6 +74,7 @@ export const Route = createFileRoute("/_authenticated/orcamentos")({
 type Linha = { texto: string; valor: number };
 
 interface FormState {
+  tipos: string[];
   cliente_id: string | null;
   cliente_nome: string;
   cliente_cnpj: string;
@@ -99,6 +103,7 @@ function maisDias(dias: number) {
 
 function estadoInicial(): FormState {
   return {
+    tipos: [],
     cliente_id: null,
     cliente_nome: "",
     cliente_cnpj: "",
@@ -192,6 +197,11 @@ function OrcamentoForm({
   const qc = useQueryClient();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: fetchClientes });
   const { data: empresa } = useQuery({ queryKey: ["empresa-config"], queryFn: fetchEmpresaConfig });
+  const { data: tipos = [] } = useQuery({ queryKey: ["tipos_projeto"], queryFn: fetchTiposProjeto });
+  const { data: modelos = [] } = useQuery({
+    queryKey: ["orcamento_modelos"],
+    queryFn: fetchOrcamentoModelos,
+  });
 
   const [form, setForm] = useState<FormState>(base?.form ?? estadoInicial());
   const [normas, setNormas] = useState<string[]>(base?.normas ?? []);
@@ -201,6 +211,46 @@ function OrcamentoForm({
   );
   const [parcelasManual, setParcelasManual] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [descricao, setDescricao] = useState("");
+  const snapshot = (f: FormState, n: string[], a: string[]) =>
+    JSON.stringify([f.escopo, f.valor_descricao, f.observacoes, n, a]);
+  const [aplicado, setAplicado] = useState(() => snapshot(form, normas, atividades));
+
+  function alternarTipo(nome: string) {
+    const novos = form.tipos.includes(nome)
+      ? form.tipos.filter((t) => t !== nome)
+      : [...form.tipos, nome];
+    const sel = novos
+      .map((t) => modelos.find((m) => m.tipo === t))
+      .filter((m): m is OrcamentoModelo => !!m);
+    if (sel.length === 0) {
+      set("tipos", novos);
+      return;
+    }
+    const editado = snapshot(form, normas, atividades) !== aplicado;
+    if (editado && !window.confirm(`Substituir escopo e atividades pelo modelo de ${novos.join(" + ")}?`)) {
+      set("tipos", novos);
+      return;
+    }
+    const combinado = sel.length > 1;
+    let escopo = sel.map((m) => m.escopo).filter(Boolean).join("\n\n");
+    if (descricao.trim()) escopo = escopo.split("[descrição]").join(descricao.trim());
+    const n = [...new Set(sel.flatMap((m) => m.normas))];
+    const a = sel.flatMap((m) => m.atividades);
+    const rotulo = combinado ? "das atividades descritas" : sel[0].rotulo_valor;
+    const obs = sel.map((m) => m.observacao).filter(Boolean).join("\n\n");
+    const novoForm: FormState = {
+      ...form,
+      tipos: novos,
+      escopo,
+      valor_descricao: rotulo ? `Valor de Investimento ${rotulo}` : form.valor_descricao,
+      observacoes: obs || form.observacoes,
+    };
+    setForm(novoForm);
+    setNormas(n);
+    setAtividades(a);
+    setAplicado(snapshot(novoForm, n, a));
+  }
 
   const valorNum = Number(form.valor.replace(/\./g, "").replace(",", ".")) || 0;
 
@@ -220,6 +270,7 @@ function OrcamentoForm({
     try {
       let orcamentoId = editando?.id;
       const valores = {
+        tipos: form.tipos,
         cliente_id: form.cliente_id,
         cliente_nome: form.cliente_nome,
         cliente_cnpj: form.cliente_cnpj || null,
@@ -357,8 +408,48 @@ function OrcamentoForm({
         </div>
       </section>
 
+      <section className="space-y-2">
+        <Label>Tipo de projeto (pode escolher mais de um)</Label>
+        <div className="flex flex-wrap gap-2">
+          {tipos.map((t) => {
+            const ativo = form.tipos.includes(t.nome);
+            return (
+              <Button
+                key={t.id}
+                type="button"
+                size="sm"
+                variant={ativo ? "default" : "outline"}
+                className="capitalize"
+                onClick={() => alternarTipo(t.nome)}
+              >
+                {t.nome}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Ao escolher o tipo, escopo, normas, atividades, descrição do valor e observações são
+          preenchidos pelo modelo. Tudo continua editável.
+        </p>
+      </section>
+
       <section className="space-y-1.5">
         <Label>Escopo da proposta</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder='Descrição (ex.: "de uma unidade habitacional", "da loja")'
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!descricao.trim() || !form.escopo.includes("[descrição]")}
+            onClick={() => set("escopo", form.escopo.split("[descrição]").join(descricao.trim()))}
+          >
+            Inserir no escopo
+          </Button>
+        </div>
         <Textarea
           rows={4}
           value={form.escopo}
@@ -524,6 +615,7 @@ function OrcamentosPage() {
 
   function paraForm(o: Orcamento): FormState {
     return {
+      tipos: o.tipos ?? [],
       cliente_id: o.cliente_id,
       cliente_nome: o.cliente_nome,
       cliente_cnpj: o.cliente_cnpj ?? "",
