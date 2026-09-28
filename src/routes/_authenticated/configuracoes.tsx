@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { ModelosOrcamento } from "@/components/ModelosOrcamento";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,6 +104,7 @@ function ConfiguracoesPage() {
           </form>
         </CardContent>
       </Card>
+      <ModelosOrcamento isAdmin={isAdmin} />
     </AppShell>
   );
 }
