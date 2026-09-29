@@ -87,6 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Sistema Kanban da Lenzee Engenharia Elétrica e Consultoria para controle de orçamentos, prazos, valores e conformidade normativa.",
       },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "author", content: "Lenzee Engenharia Elétrica e Consultoria" },
       { property: "og:title", content: "Lenzee — Gestão de Projetos Elétricos" },
       {

@@ -668,7 +668,12 @@ export type Database = {
     }
     Enums: {
       anexo_status: "rascunho" | "em_revisao" | "final_aprovado"
-      app_role: "admin" | "engenheiro" | "comercial" | "aprovador"
+      app_role:
+        | "admin"
+        | "engenheiro"
+        | "comercial"
+        | "aprovador"
+        | "visualizador"
       orcamento_item_tipo: "norma" | "atividade" | "parcela"
       orcamento_status: "enviado" | "aprovado" | "recusado"
       prioridade: "baixa" | "media" | "alta" | "urgente"
@@ -801,7 +806,13 @@ export const Constants = {
   public: {
     Enums: {
       anexo_status: ["rascunho", "em_revisao", "final_aprovado"],
-      app_role: ["admin", "engenheiro", "comercial", "aprovador"],
+      app_role: [
+        "admin",
+        "engenheiro",
+        "comercial",
+        "aprovador",
+        "visualizador",
+      ],
       orcamento_item_tipo: ["norma", "atividade", "parcela"],
       orcamento_status: ["enviado", "aprovado", "recusado"],
       prioridade: ["baixa", "media", "alta", "urgente"],

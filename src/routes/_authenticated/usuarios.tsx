@@ -2,13 +2,27 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Trash2 } from "lucide-react";
+import { Mail, Power, RotateCw, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,102 +42,96 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCurrentUser, useMyRoles } from "@/hooks/use-session";
-import { excluirUsuario } from "@/lib/admin.functions";
 import {
-  ROLE_LABEL,
-  deleteRow,
-  fetchProfiles,
-  fetchRoles,
-  insertRow,
-  updateRow,
-  type AppRole,
-  type Profile,
-} from "@/lib/api";
+  alterarPapel,
+  convidarUsuario,
+  definirAtivo,
+  excluirUsuario,
+  listarUsuarios,
+  reenviarConvite,
+  type UsuarioLinha,
+} from "@/lib/admin.functions";
+import { ROLE_LABEL, type AppRole } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
+  head: () => ({ meta: [{ title: "Usuários — Lenzee" }] }),
   component: UsuariosPage,
 });
 
-const ROLES: AppRole[] = ["admin", "engenheiro"];
+const PAPEIS: AppRole[] = ["admin", "engenheiro", "visualizador"];
+const STATUS: Record<UsuarioLinha["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  ativo: { label: "Ativo", variant: "default" },
+  pendente: { label: "Convite pendente", variant: "secondary" },
+  expirado: { label: "Convite expirado", variant: "outline" },
+  desativado: { label: "Desativado", variant: "destructive" },
+};
 
 function UsuariosPage() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   const { isAdmin } = useMyRoles(user?.id);
-  const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
-  const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: fetchRoles });
-  const removerConta = useServerFn(excluirUsuario);
+  const listar = useServerFn(listarUsuarios);
+  const convidar = useServerFn(convidarUsuario);
+  const reenviar = useServerFn(reenviarConvite);
+  const mudarPapel = useServerFn(alterarPapel);
+  const ativar = useServerFn(definirAtivo);
+  const excluir = useServerFn(excluirUsuario);
 
-  const [paraExcluir, setParaExcluir] = useState<Profile | null>(null);
-  const [excluindo, setExcluindo] = useState(false);
+  const { data: usuarios = [], isLoading } = useQuery({
+    queryKey: ["usuarios-admin"],
+    queryFn: () => listar(),
+    enabled: isAdmin,
+  });
 
-  async function alternar(userId: string, role: AppRole, marcar: boolean) {
+  const [convite, setConvite] = useState(false);
+  const [form, setForm] = useState({ email: "", nome: "", papel: "engenheiro" as AppRole });
+  const [enviando, setEnviando] = useState(false);
+  const [paraExcluir, setParaExcluir] = useState<UsuarioLinha | null>(null);
+
+  const recarregar = () => qc.invalidateQueries({ queryKey: ["usuarios-admin"] });
+
+  async function acao(fn: () => Promise<unknown>, ok: string) {
     try {
-      if (!marcar && role === "admin") {
-        const admins = roles.filter((r) => r.role === "admin");
-        if (admins.length <= 1) {
-          toast.error("É necessário manter ao menos um administrador no sistema.");
-          return;
-        }
-      }
-      if (marcar) await insertRow("user_roles", { user_id: userId, role });
-      else {
-        const atual = roles.find((r) => r.user_id === userId && r.role === role);
-        if (atual) await deleteRow("user_roles", atual.id);
-      }
-      await qc.invalidateQueries({ queryKey: ["roles"] });
-      toast.success(
-        marcar ? `Perfil ${ROLE_LABEL[role]} atribuído.` : `Perfil ${ROLE_LABEL[role]} removido.`,
-      );
+      await fn();
+      await recarregar();
+      toast.success(ok);
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
 
-  async function alternarAcesso(userId: string, aprovar: boolean) {
+  async function enviarConvite(e: React.FormEvent) {
+    e.preventDefault();
+    setEnviando(true);
     try {
-      if (!aprovar && userId === user?.id) {
-        toast.error("Você não pode revogar o próprio acesso.");
-        return;
-      }
-      await updateRow("profiles", userId, { aprovado: aprovar });
-      await qc.invalidateQueries({ queryKey: ["profiles"] });
-      toast.success(aprovar ? "Acesso liberado." : "Acesso revogado.");
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
-  async function confirmarExclusao() {
-    if (!paraExcluir) return;
-    setExcluindo(true);
-    try {
-      await removerConta({ data: { userId: paraExcluir.id } });
-      await qc.invalidateQueries({ queryKey: ["profiles"] });
-      await qc.invalidateQueries({ queryKey: ["roles"] });
-      toast.success("Conta excluída.");
-      setParaExcluir(null);
-    } catch (e) {
-      toast.error((e as Error).message);
+      await convidar({ data: form });
+      toast.success(`Convite enviado para ${form.email}.`);
+      setConvite(false);
+      setForm({ email: "", nome: "", papel: "engenheiro" });
+      await recarregar();
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
-      setExcluindo(false);
+      setEnviando(false);
     }
   }
 
-  const pendentes = profiles.filter((p) => !p.aprovado);
+  if (!isAdmin) {
+    return (
+      <AppShell title="Usuários">
+        <p className="text-muted-foreground">Somente administradores podem acessar esta tela.</p>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
       title="Usuários e permissões"
-      description="Aprove novos acessos e defina os perfis da equipe de engenharia"
+      description="Acesso somente por convite"
       actions={
-        !isAdmin ? (
-          <Badge variant="secondary">Somente administradores podem alterar perfis</Badge>
-        ) : pendentes.length > 0 ? (
-          <Badge>
-            {pendentes.length} aguardando aprovação
-          </Badge>
-        ) : null
+        <Button onClick={() => setConvite(true)}>
+          <UserPlus className="h-4 w-4" /> Convidar usuário
+        </Button>
       }
     >
       <div className="rounded-lg border border-border bg-card">
@@ -132,62 +140,91 @@ function UsuariosPage() {
             <TableRow>
               <TableHead>Usuário</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Acesso liberado</TableHead>
-              {ROLES.map((r) => (
-                <TableHead key={r}>{ROLE_LABEL[r]}</TableHead>
-              ))}
-              <TableHead className="w-16 text-right">Ações</TableHead>
+              <TableHead>Papel</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {profiles.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">
-                  {p.nome || "—"}
-                  {!p.aprovado && (
-                    <Badge variant="secondary" className="ml-2">
-                      Pendente
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>{p.email}</TableCell>
-                <TableCell>
-                  <Switch
-                    checked={p.aprovado}
-                    disabled={!isAdmin}
-                    onCheckedChange={(v) => alternarAcesso(p.id, v)}
-                  />
-                </TableCell>
-                {ROLES.map((r) => {
-                  const tem = roles.some((x) => x.user_id === p.id && x.role === r);
-                  return (
-                    <TableCell key={r}>
-                      <Checkbox
-                        checked={tem}
-                        disabled={!isAdmin}
-                        onCheckedChange={(v) => alternar(p.id, r, !!v)}
-                      />
-                    </TableCell>
-                  );
-                })}
-                <TableCell className="text-right">
-                  {isAdmin && p.id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Excluir ${p.nome || p.email}`}
-                      onClick={() => setParaExcluir(p)}
+            {usuarios.map((u) => {
+              const eu = u.id === user?.id;
+              const aguardando = u.status === "pendente" || u.status === "expirado";
+              return (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.nome}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={u.papel ?? undefined}
+                      disabled={eu}
+                      onValueChange={(v) =>
+                        acao(
+                          () => mudarPapel({ data: { userId: u.id, papel: v as "admin" } }),
+                          "Papel atualizado.",
+                        )
+                      }
                     >
-                      <Trash2 className="h-4 w-4 text-danger" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {profiles.length === 0 && (
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Sem papel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAPEIS.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {ROLE_LABEL[p]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS[u.status].variant}>{STATUS[u.status].label}</Badge>
+                  </TableCell>
+                  <TableCell className="space-x-1 text-right whitespace-nowrap">
+                    {aguardando && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          acao(() => reenviar({ data: { userId: u.id } }), "Convite reenviado.")
+                        }
+                      >
+                        <RotateCw className="h-4 w-4" /> Reenviar
+                      </Button>
+                    )}
+                    {!eu && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          acao(
+                            () =>
+                              ativar({ data: { userId: u.id, ativo: u.status === "desativado" } }),
+                            u.status === "desativado" ? "Usuário reativado." : "Usuário desativado.",
+                          )
+                        }
+                      >
+                        <Power className="h-4 w-4" />
+                        {u.status === "desativado" ? "Reativar" : "Desativar"}
+                      </Button>
+                    )}
+                    {!eu && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Excluir ${u.email}`}
+                        onClick={() => setParaExcluir(u)}
+                      >
+                        <Trash2 className="h-4 w-4 text-danger" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {!isLoading && usuarios.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                  Nenhum usuário cadastrado.
+                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                  Nenhum usuário.
                 </TableCell>
               </TableRow>
             )}
@@ -195,29 +232,79 @@ function UsuariosPage() {
         </Table>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">
-        Novos cadastros ficam bloqueados até que um administrador libere o acesso. Administrador:
-        acesso total · Engenheiro/Projetista: cria e edita cards, projetos e versões.
+        Administrador: acesso total · Engenheiro/Projetista: edita projetos, orçamentos e anexos ·
+        Visualizador: somente leitura, com valores sempre ocultos.
       </p>
+
+      <Dialog open={convite} onOpenChange={setConvite}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Convidar usuário</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={enviarConvite}>
+            <div className="space-y-1.5">
+              <Label htmlFor="c-email">E-mail</Label>
+              <Input
+                id="c-email"
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="c-nome">Nome (opcional)</Label>
+              <Input
+                id="c-nome"
+                value={form.nome}
+                onChange={(e) => setForm({ ...form, nome: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Papel</Label>
+              <Select value={form.papel} onValueChange={(v) => setForm({ ...form, papel: v as AppRole })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAPEIS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {ROLE_LABEL[p]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A pessoa recebe um e-mail com link de uso único para criar a senha. O link vale 24 horas.
+            </p>
+            <DialogFooter>
+              <Button type="submit" disabled={enviando}>
+                <Mail className="h-4 w-4" /> {enviando ? "Enviando..." : "Enviar convite"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!paraExcluir} onOpenChange={(o) => !o && setParaExcluir(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir conta de acesso?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir conta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário {paraExcluir?.nome || paraExcluir?.email}? A
-              sessão dele é encerrada imediatamente e esta ação não pode ser desfeita.
+              {paraExcluir?.email} perde o acesso e a conta é removida. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={excluindo}
-              onClick={(e) => {
-                e.preventDefault();
-                confirmarExclusao();
+              onClick={() => {
+                const alvo = paraExcluir;
+                setParaExcluir(null);
+                if (alvo) acao(() => excluir({ data: { userId: alvo.id } }), "Conta excluída.");
               }}
             >
-              {excluindo ? "Excluindo..." : "Excluir"}
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

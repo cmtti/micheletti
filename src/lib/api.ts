@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "engenheiro" | "comercial" | "aprovador";
+export type AppRole = "admin" | "engenheiro" | "visualizador" | "comercial" | "aprovador";
 export type Prioridade = "baixa" | "media" | "alta" | "urgente";
 export type ProjetoStatus = "ativo" | "concluido" | "cancelado";
 export type AnexoStatus = "rascunho" | "em_revisao" | "final_aprovado";
@@ -135,6 +135,7 @@ export const TIPOS_DOCUMENTO = [
 export const ROLE_LABEL: Record<AppRole, string> = {
   admin: "Administrador",
   engenheiro: "Engenheiro/Projetista",
+  visualizador: "Visualizador",
   comercial: "Comercial",
   aprovador: "Aprovador",
 };
