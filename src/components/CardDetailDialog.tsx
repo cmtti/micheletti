@@ -182,7 +182,7 @@ export function CardDetailDialog({
     }
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(a.storage_path, 60, { download: a.nome_arquivo });
+      .createSignedUrl(a.storage_path, 600, { download: a.nome_arquivo });
     if (error || !data) return toast.error(error?.message ?? "Falha ao gerar link.");
     window.open(data.signedUrl, "_blank", "noreferrer");
   }
