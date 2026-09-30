@@ -1,3 +1,4 @@
+import type React from "react";
 import {
   createContext,
   useCallback,
@@ -25,7 +26,10 @@ interface ValuesVisibilityValue {
   formatarValor: (valor: number) => string;
 }
 
-const ValuesVisibilityContext = createContext<ValuesVisibilityValue | null>(null);
+// Mantém uma única instância do contexto mesmo após recarregamentos do módulo.
+const g = globalThis as { __lenzeeValoresCtx?: React.Context<ValuesVisibilityValue | null> };
+const ValuesVisibilityContext =
+  g.__lenzeeValoresCtx ?? (g.__lenzeeValoresCtx = createContext<ValuesVisibilityValue | null>(null));
 
 export function ValuesVisibilityProvider({ children }: { children: ReactNode }) {
   const [preferencia, setPreferencia] = useState(false);
