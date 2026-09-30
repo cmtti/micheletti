@@ -348,8 +348,15 @@ export function diasAtraso(card: CardItem): number {
   return diff > 0 ? diff : 0;
 }
 
+/** Quando true (papel Visualizador), todo valor em R$ aparece mascarado. */
+let mascaraForcada = false;
+export const definirMascaraForcada = (v: boolean) => {
+  mascaraForcada = v;
+};
 export const brl = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+  mascaraForcada
+    ? "R$ ••••••"
+    : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
 export const dataBR = (v?: string | null) =>
   v ? new Date(v + (v.length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR") : "—";
