@@ -13,7 +13,10 @@ export const Route = createFileRoute("/_authenticated")({
       .eq("id", data.user.id)
       .maybeSingle();
 
-    if (!perfil?.aprovado) throw redirect({ to: "/aguardando-aprovacao" });
+    if (!perfil?.aprovado) {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth" });
+    }
 
     return { user: data.user };
   },
