@@ -674,6 +674,7 @@ export type Database = {
         | "comercial"
         | "aprovador"
         | "visualizador"
+        | "cliente"
       orcamento_item_tipo: "norma" | "atividade" | "parcela"
       orcamento_status: "enviado" | "aprovado" | "recusado"
       prioridade: "baixa" | "media" | "alta" | "urgente"
@@ -812,6 +813,7 @@ export const Constants = {
         "comercial",
         "aprovador",
         "visualizador",
+        "cliente",
       ],
       orcamento_item_tipo: ["norma", "atividade", "parcela"],
       orcamento_status: ["enviado", "aprovado", "recusado"],
