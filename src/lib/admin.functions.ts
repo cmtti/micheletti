@@ -154,3 +154,38 @@ export const excluirUsuario = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const convidarCliente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        projetoId: z.string().uuid(),
+        email: z.string().trim().toLowerCase().email().max(255),
+        nome: z.string().trim().max(120).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const admin = await exigirAdmin(context);
+    const { data: lista, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (error) throw new Error(error.message);
+    let user = lista.users.find((u: any) => (u.email ?? "").toLowerCase() === data.email);
+    if (user) {
+      const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
+      if ((roles ?? []).some((r: { role: string }) => r.role !== "cliente"))
+        throw new Error("Este e-mail pertence à equipe interna e não pode ser cliente.");
+    } else {
+      const { data: inv, error: e2 } = await admin.auth.admin.inviteUserByEmail(data.email, {
+        data: { nome: data.nome || data.email.split("@")[0], papel: "cliente" },
+        redirectTo: `${origem()}/portal`,
+      });
+      if (e2) throw new Error(e2.message);
+      user = inv.user;
+    }
+    const { error: e3 } = await admin
+      .from("projeto_clientes")
+      .upsert({ projeto_id: data.projetoId, user_id: user!.id }, { onConflict: "projeto_id,user_id" });
+    if (e3) throw new Error(e3.message);
+    return { ok: true, novo: !lista.users.some((u: any) => u.id === user!.id) };
+  });

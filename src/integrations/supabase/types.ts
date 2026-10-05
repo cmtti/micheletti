@@ -24,6 +24,7 @@ export type Database = {
           revisao: number
           status: Database["public"]["Enums"]["anexo_status"]
           storage_path: string | null
+          visivel_cliente: boolean
         }
         Insert: {
           autor_id?: string | null
@@ -34,6 +35,7 @@ export type Database = {
           revisao?: number
           status?: Database["public"]["Enums"]["anexo_status"]
           storage_path?: string | null
+          visivel_cliente?: boolean
         }
         Update: {
           autor_id?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           revisao?: number
           status?: Database["public"]["Enums"]["anexo_status"]
           storage_path?: string | null
+          visivel_cliente?: boolean
         }
         Relationships: [
           {
@@ -340,6 +343,7 @@ export type Database = {
         Row: {
           cor: string
           created_at: string
+          etapa_cliente: string | null
           id: string
           nome: string
           ordem: number
@@ -347,6 +351,7 @@ export type Database = {
         Insert: {
           cor?: string
           created_at?: string
+          etapa_cliente?: string | null
           id?: string
           nome: string
           ordem?: number
@@ -354,6 +359,7 @@ export type Database = {
         Update: {
           cor?: string
           created_at?: string
+          etapa_cliente?: string | null
           id?: string
           nome?: string
           ordem?: number
@@ -544,6 +550,76 @@ export type Database = {
         }
         Relationships: []
       }
+      projeto_clientes: {
+        Row: {
+          created_at: string
+          id: string
+          projeto_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          projeto_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          projeto_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_clientes_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_parcelas: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          ordem: number
+          pago: boolean
+          projeto_id: string
+          valor: number
+          vencimento: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          pago?: boolean
+          projeto_id: string
+          valor?: number
+          vencimento?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          pago?: boolean
+          projeto_id?: string
+          valor?: number
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_parcelas_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projetos: {
         Row: {
           cliente_id: string | null
@@ -552,8 +628,10 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          prazo_entrega: string | null
           status: Database["public"]["Enums"]["projeto_status"]
           tipo: string
+          valor_contrato: number | null
         }
         Insert: {
           cliente_id?: string | null
@@ -562,8 +640,10 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          prazo_entrega?: string | null
           status?: Database["public"]["Enums"]["projeto_status"]
           tipo?: string
+          valor_contrato?: number | null
         }
         Update: {
           cliente_id?: string | null
@@ -572,8 +652,10 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          prazo_entrega?: string | null
           status?: Database["public"]["Enums"]["projeto_status"]
           tipo?: string
+          valor_contrato?: number | null
         }
         Relationships: [
           {
@@ -664,7 +746,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      portal_meus_projetos: {
+        Args: never
+        Returns: {
+          etapa: string
+          id: string
+          nome: string
+          prazo_entrega: string
+          tipo: string
+        }[]
+      }
+      portal_projeto: { Args: { _id: string }; Returns: Json }
     }
     Enums: {
       anexo_status: "rascunho" | "em_revisao" | "final_aprovado"
@@ -674,6 +766,7 @@ export type Database = {
         | "comercial"
         | "aprovador"
         | "visualizador"
+        | "cliente"
       orcamento_item_tipo: "norma" | "atividade" | "parcela"
       orcamento_status: "enviado" | "aprovado" | "recusado"
       prioridade: "baixa" | "media" | "alta" | "urgente"
@@ -812,6 +905,7 @@ export const Constants = {
         "comercial",
         "aprovador",
         "visualizador",
+        "cliente",
       ],
       orcamento_item_tipo: ["norma", "atividade", "parcela"],
       orcamento_status: ["enviado", "aprovado", "recusado"],

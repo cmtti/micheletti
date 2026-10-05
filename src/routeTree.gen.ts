@@ -16,6 +16,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AguardandoAprovacaoRouteImport } from './routes/aguardando-aprovacao'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PortalIndexRouteImport } from './routes/portal/index'
+import { Route as PortalEntrarRouteImport } from './routes/portal/entrar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedProjetosRouteImport } from './routes/_authenticated/projetos'
 import { Route as AuthenticatedOrcamentosRouteImport } from './routes/_authenticated/orcamentos'
@@ -23,6 +25,7 @@ import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
+import { Route as PortalProjetoIdRouteImport } from './routes/portal/projeto.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -56,6 +59,16 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalIndexRoute = PortalIndexRouteImport.update({
+  id: '/portal/',
+  path: '/portal/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalEntrarRoute = PortalEntrarRouteImport.update({
+  id: '/portal/entrar',
+  path: '/portal/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
@@ -94,6 +107,11 @@ const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const PortalProjetoIdRoute = PortalProjetoIdRouteImport.update({
+  id: '/portal/projeto/$id',
+  path: '/portal/projeto/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +127,9 @@ export interface FileRoutesByFullPath {
   '/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/projetos': typeof AuthenticatedProjetosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/portal/entrar': typeof PortalEntrarRoute
+  '/portal/': typeof PortalIndexRoute
+  '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -124,6 +145,9 @@ export interface FileRoutesByTo {
   '/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/projetos': typeof AuthenticatedProjetosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/portal/entrar': typeof PortalEntrarRoute
+  '/portal': typeof PortalIndexRoute
+  '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +165,9 @@ export interface FileRoutesById {
   '/_authenticated/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/_authenticated/projetos': typeof AuthenticatedProjetosRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/portal/entrar': typeof PortalEntrarRoute
+  '/portal/': typeof PortalIndexRoute
+  '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +185,9 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/projetos'
     | '/usuarios'
+    | '/portal/entrar'
+    | '/portal/'
+    | '/portal/projeto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,6 +203,9 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/projetos'
     | '/usuarios'
+    | '/portal/entrar'
+    | '/portal'
+    | '/portal/projeto/$id'
   id:
     | '__root__'
     | '/'
@@ -189,6 +222,9 @@ export interface FileRouteTypes {
     | '/_authenticated/orcamentos'
     | '/_authenticated/projetos'
     | '/_authenticated/usuarios'
+    | '/portal/entrar'
+    | '/portal/'
+    | '/portal/projeto/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -199,6 +235,9 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  PortalEntrarRoute: typeof PortalEntrarRoute
+  PortalIndexRoute: typeof PortalIndexRoute
+  PortalProjetoIdRoute: typeof PortalProjetoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +291,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/': {
+      id: '/portal/'
+      path: '/portal'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof PortalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal/entrar': {
+      id: '/portal/entrar'
+      path: '/portal/entrar'
+      fullPath: '/portal/entrar'
+      preLoaderRoute: typeof PortalEntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -301,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/portal/projeto/$id': {
+      id: '/portal/projeto/$id'
+      path: '/portal/projeto/$id'
+      fullPath: '/portal/projeto/$id'
+      preLoaderRoute: typeof PortalProjetoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -335,6 +395,9 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  PortalEntrarRoute: PortalEntrarRoute,
+  PortalIndexRoute: PortalIndexRoute,
+  PortalProjetoIdRoute: PortalProjetoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
