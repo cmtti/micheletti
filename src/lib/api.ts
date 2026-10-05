@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "engenheiro" | "visualizador" | "comercial" | "aprovador";
+export type AppRole = "admin" | "engenheiro" | "visualizador" | "comercial" | "aprovador" | "cliente";
 export type Prioridade = "baixa" | "media" | "alta" | "urgente";
 export type ProjetoStatus = "ativo" | "concluido" | "cancelado";
 export type AnexoStatus = "rascunho" | "em_revisao" | "final_aprovado";
@@ -28,6 +28,7 @@ export interface Etapa {
   nome: string;
   ordem: number;
   cor: string;
+  etapa_cliente: EtapaCliente | null;
 }
 export interface Projeto {
   id: string;
@@ -36,6 +37,8 @@ export interface Projeto {
   tipo: string;
   status: ProjetoStatus;
   descricao: string | null;
+  prazo_entrega: string | null;
+  valor_contrato: number | null;
   created_at: string;
 }
 export interface CardItem {
@@ -72,6 +75,7 @@ export interface AnexoVersao {
   status: AnexoStatus;
   storage_path: string | null;
   autor_id: string | null;
+  visivel_cliente: boolean;
   created_at: string;
 }
 export interface ChecklistItem {
@@ -103,6 +107,29 @@ export interface Auditoria {
   acao: string;
   detalhe: string | null;
   created_at: string;
+}
+
+export type EtapaCliente = "orcamento" | "projeto" | "revisao" | "aprovacao" | "concluido";
+export const ETAPAS_CLIENTE: { id: EtapaCliente; label: string }[] = [
+  { id: "orcamento", label: "Orçamento" },
+  { id: "projeto", label: "Projeto" },
+  { id: "revisao", label: "Revisão" },
+  { id: "aprovacao", label: "Aprovação" },
+  { id: "concluido", label: "Concluído" },
+];
+export interface ProjetoParcela {
+  id: string;
+  projeto_id: string;
+  descricao: string;
+  valor: number;
+  vencimento: string | null;
+  pago: boolean;
+  ordem: number;
+}
+export interface ProjetoCliente {
+  id: string;
+  projeto_id: string;
+  user_id: string;
 }
 
 const db = supabase as unknown as {
@@ -138,6 +165,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   visualizador: "Visualizador",
   comercial: "Comercial",
   aprovador: "Aprovador",
+  cliente: "Cliente",
 };
 
 export const PRIORIDADE_LABEL: Record<Prioridade, string> = {
@@ -195,6 +223,13 @@ export const fetchApoios = (projetoId?: string) =>
       ? db.from("projetos_apoio").select("*").eq("projeto_id", projetoId).order("created_at")
       : db.from("projetos_apoio").select("*").order("created_at"),
   );
+
+export const fetchParcelas = (projetoId: string) =>
+  run<ProjetoParcela[]>(
+    db.from("projeto_parcelas").select("*").eq("projeto_id", projetoId).order("ordem").order("vencimento"),
+  );
+export const fetchProjetoClientes = (projetoId: string) =>
+  run<ProjetoCliente[]>(db.from("projeto_clientes").select("*").eq("projeto_id", projetoId));
 
 export interface TipoProjeto {
   id: string;
