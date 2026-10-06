@@ -109,6 +109,12 @@ function AuthPage() {
                 >
                   Esqueci minha senha
                 </Link>
+                <Link
+                  to="/portal/entrar"
+                  className="block text-center text-sm font-medium text-primary hover:underline"
+                >
+                  Sou cliente — acessar o Portal
+                </Link>
               </form>
             </div>
 

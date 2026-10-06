@@ -397,6 +397,38 @@ export function CardDetailDialog({
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
+                    <label
+                      className="mr-1 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground"
+                      title="Mostrar este arquivo no Portal do Cliente"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-primary"
+                        checked={a.visivel_cliente}
+                        onChange={async (e) => {
+                          try {
+                            await updateRow("anexos_versao", a.id, { visivel_cliente: e.target.checked });
+                            qc.invalidateQueries({ queryKey: ["anexos", cardId] });
+                          } catch (err) {
+                            toast.error((err as Error).message);
+                          }
+                        }}
+                      />
+                      Visível ao cliente
+                    </label>
+                    <select
+                      className="mr-1 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                      value={a.status}
+                      title="Status da versão"
+                      onChange={async (e) => {
+                        await updateRow("anexos_versao", a.id, { status: e.target.value });
+                        qc.invalidateQueries({ queryKey: ["anexos", cardId] });
+                      }}
+                    >
+                      <option value="rascunho">Rascunho</option>
+                      <option value="em_revisao">Em revisão</option>
+                      <option value="final_aprovado">Final aprovado</option>
+                    </select>
                     <Button variant="ghost" size="icon" onClick={() => baixar(a)}>
                       <Download className="h-4 w-4" />
                     </Button>

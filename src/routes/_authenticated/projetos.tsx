@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Printer, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { PortalProjetoDialog } from "@/components/PortalProjetoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,6 +180,10 @@ function ProjetoForm({
   const [tipo, setTipo] = useState(projeto?.tipo ?? TIPOS_PROJETO[0]);
   const [status, setStatus] = useState<ProjetoStatus>(projeto?.status ?? "ativo");
   const [descricao, setDescricao] = useState(projeto?.descricao ?? "");
+  const [prazo, setPrazo] = useState(projeto?.prazo_entrega ?? "");
+  const [valorContrato, setValorContrato] = useState(
+    projeto?.valor_contrato != null ? String(projeto.valor_contrato) : "",
+  );
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -188,6 +193,8 @@ function ProjetoForm({
       tipo,
       status,
       descricao: descricao || null,
+      prazo_entrega: prazo || null,
+      valor_contrato: valorContrato ? Number(valorContrato.replace(/\./g, "").replace(",", ".")) : null,
     };
     try {
       if (projeto) await updateRow("projetos", projeto.id, values);
@@ -237,6 +244,21 @@ function ProjetoForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>Prazo previsto de entrega</Label>
+          <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Valor do contrato (R$)</Label>
+          <Input
+            inputMode="decimal"
+            placeholder="Soma das parcelas, se vazio"
+            value={valorContrato}
+            onChange={(e) => setValorContrato(e.target.value)}
+          />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -503,6 +525,7 @@ function ProjetosPage() {
                   </TableCell>
                   <TableCell>{dataBR(p.created_at)}</TableCell>
                   <TableCell className="text-right print:hidden">
+                    <PortalProjetoDialog projeto={p} />
                     <ApoiosDialog projeto={p} />
                     <Button variant="ghost" size="sm" onClick={() => setEditando(p)}>
                       Editar

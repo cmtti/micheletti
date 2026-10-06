@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import {
   deleteRow,
+  ETAPAS_CLIENTE,
   fetchCards,
   fetchEtapas,
   fetchProfiles,
@@ -227,6 +228,24 @@ function KanbanPage() {
                 <div className="min-w-0">
                   <h2 className="truncate text-sm font-semibold">{etapa.nome}</h2>
                   <p className="text-xs text-muted-foreground">{daEtapa.length} card(s)</p>
+                  <select
+                    className="mt-1 max-w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] text-muted-foreground"
+                    title="Etapa mostrada ao cliente no portal"
+                    value={etapa.etapa_cliente ?? ""}
+                    onChange={async (e) => {
+                      try {
+                        await updateRow("etapas_kanban", etapa.id, { etapa_cliente: e.target.value || null });
+                        qc.invalidateQueries({ queryKey: ["etapas"] });
+                      } catch (err) {
+                        toast.error((err as Error).message);
+                      }
+                    }}
+                  >
+                    {ETAPAS_CLIENTE.map((x) => (
+                      <option key={x.id} value={x.id}>Cliente vê: {x.label}</option>
+                    ))}
+                    <option value="">Cliente vê: (ignorar)</option>
+                  </select>
                 </div>
                 <div className="flex">
                   <Button
