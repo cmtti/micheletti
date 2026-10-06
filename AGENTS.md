@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- Client portal (/portal) reads data only via SECURITY DEFINER RPCs (portal_meus_projetos, portal_projeto) that return whitelisted fields; clients get no table SELECT access. Why: column-level exposure control without per-column RLS.
+- private.is_membro excludes the 'cliente' role, so every internal-table policy keeps clients out automatically. Why: one choke point for internal vs. client access.
