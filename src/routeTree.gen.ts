@@ -26,6 +26,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as PortalProjetoIdRouteImport } from './routes/portal/projeto.$id'
+import { Route as PortalChamadoIdRouteImport } from './routes/portal/chamado.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -112,6 +113,11 @@ const PortalProjetoIdRoute = PortalProjetoIdRouteImport.update({
   path: '/portal/projeto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalChamadoIdRoute = PortalChamadoIdRouteImport.update({
+  id: '/portal/chamado/$id',
+  path: '/portal/chamado/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/portal/entrar': typeof PortalEntrarRoute
   '/portal/': typeof PortalIndexRoute
+  '/portal/chamado/$id': typeof PortalChamadoIdRoute
   '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRoutesByTo {
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/portal/entrar': typeof PortalEntrarRoute
   '/portal': typeof PortalIndexRoute
+  '/portal/chamado/$id': typeof PortalChamadoIdRoute
   '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRoutesById {
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/portal/entrar': typeof PortalEntrarRoute
   '/portal/': typeof PortalIndexRoute
+  '/portal/chamado/$id': typeof PortalChamadoIdRoute
   '/portal/projeto/$id': typeof PortalProjetoIdRoute
 }
 export interface FileRouteTypes {
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/portal/entrar'
     | '/portal/'
+    | '/portal/chamado/$id'
     | '/portal/projeto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/portal/entrar'
     | '/portal'
+    | '/portal/chamado/$id'
     | '/portal/projeto/$id'
   id:
     | '__root__'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/portal/entrar'
     | '/portal/'
+    | '/portal/chamado/$id'
     | '/portal/projeto/$id'
   fileRoutesById: FileRoutesById
 }
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   PortalEntrarRoute: typeof PortalEntrarRoute
   PortalIndexRoute: typeof PortalIndexRoute
+  PortalChamadoIdRoute: typeof PortalChamadoIdRoute
   PortalProjetoIdRoute: typeof PortalProjetoIdRoute
 }
 
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalProjetoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/chamado/$id': {
+      id: '/portal/chamado/$id'
+      path: '/portal/chamado/$id'
+      fullPath: '/portal/chamado/$id'
+      preLoaderRoute: typeof PortalChamadoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -397,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   PortalEntrarRoute: PortalEntrarRoute,
   PortalIndexRoute: PortalIndexRoute,
+  PortalChamadoIdRoute: PortalChamadoIdRoute,
   PortalProjetoIdRoute: PortalProjetoIdRoute,
 }
 export const routeTree = rootRouteImport
