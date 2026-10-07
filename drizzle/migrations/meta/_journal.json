@@ -15,6 +15,13 @@
       "when": 1791208670536,
       "tag": "0001_portal_cliente",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791369018685,
+      "tag": "0002_chamados",
+      "breakpoints": true
     }
   ]
 }

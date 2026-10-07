@@ -206,6 +206,120 @@ export type Database = {
           },
         ]
       }
+      chamado_anexos: {
+        Row: {
+          autor_id: string | null
+          chamado_id: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          storage_path: string
+        }
+        Insert: {
+          autor_id?: string | null
+          chamado_id: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          storage_path: string
+        }
+        Update: {
+          autor_id?: string | null
+          chamado_id?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamado_anexos_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chamado_mensagens: {
+        Row: {
+          autor_id: string | null
+          chamado_id: string
+          created_at: string
+          id: string
+          interna: boolean
+          texto: string
+        }
+        Insert: {
+          autor_id?: string | null
+          chamado_id: string
+          created_at?: string
+          id?: string
+          interna?: boolean
+          texto: string
+        }
+        Update: {
+          autor_id?: string | null
+          chamado_id?: string
+          created_at?: string
+          id?: string
+          interna?: boolean
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamado_mensagens_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chamados: {
+        Row: {
+          autor_id: string | null
+          categoria: string
+          created_at: string
+          descricao: string
+          id: string
+          projeto_id: string
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          autor_id?: string | null
+          categoria: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          projeto_id: string
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          autor_id?: string | null
+          categoria?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          projeto_id?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamados_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_itens: {
         Row: {
           card_id: string
@@ -629,6 +743,7 @@ export type Database = {
           id: string
           nome: string
           prazo_entrega: string | null
+          responsavel_id: string | null
           status: Database["public"]["Enums"]["projeto_status"]
           tipo: string
           valor_contrato: number | null
@@ -641,6 +756,7 @@ export type Database = {
           id?: string
           nome: string
           prazo_entrega?: string | null
+          responsavel_id?: string | null
           status?: Database["public"]["Enums"]["projeto_status"]
           tipo?: string
           valor_contrato?: number | null
@@ -653,6 +769,7 @@ export type Database = {
           id?: string
           nome?: string
           prazo_entrega?: string | null
+          responsavel_id?: string | null
           status?: Database["public"]["Enums"]["projeto_status"]
           tipo?: string
           valor_contrato?: number | null
@@ -757,6 +874,7 @@ export type Database = {
         }[]
       }
       portal_projeto: { Args: { _id: string }; Returns: Json }
+      portal_reabrir_chamado: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       anexo_status: "rascunho" | "em_revisao" | "final_aprovado"
