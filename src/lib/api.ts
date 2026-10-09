@@ -39,6 +39,7 @@ export interface Projeto {
   descricao: string | null;
   prazo_entrega: string | null;
   valor_contrato: number | null;
+  responsavel_id: string | null;
   created_at: string;
 }
 export interface CardItem {

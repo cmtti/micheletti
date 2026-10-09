@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { LifeBuoy } from "lucide-react";
+import { fetchChamados } from "@/lib/chamados";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, ArrowLeft, ArrowRight, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,6 +57,7 @@ function KanbanPage() {
   const { data: cards = [] } = useQuery({ queryKey: ["cards"], queryFn: fetchCards });
   const { data: projetos = [] } = useQuery({ queryKey: ["projetos"], queryFn: fetchProjetos });
   const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
+  const { data: chamados = [] } = useQuery({ queryKey: ["chamados"], queryFn: () => fetchChamados() });
 
   const { formatarValor } = useValuesVisibility();
 
@@ -329,6 +332,19 @@ function KanbanPage() {
                       <p className="mt-1 truncate text-xs text-muted-foreground">
                         {projeto?.nome ?? "Sem projeto"}
                       </p>
+                      {(() => {
+                        const n = chamados.filter((c) => c.projeto_id === card.projeto_id && c.status !== "fechado").length;
+                        return n > 0 ? (
+                          <Link
+                            to="/chamados"
+                            search={{ projeto: card.projeto_id }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-2 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-foreground"
+                          >
+                            <LifeBuoy className="h-3 w-3" /> {n} chamado{n > 1 ? "s" : ""}
+                          </Link>
+                        ) : null;
+                      })()}
                       {prazo === "atrasado" && (
                         <div className="mt-2">
                           <Badge className="bg-danger text-[10px] text-danger-foreground">
