@@ -12,3 +12,5 @@
 ## Architecture rules
 - Client portal (/portal) reads data only via SECURITY DEFINER RPCs (portal_meus_projetos, portal_projeto) that return whitelisted fields; clients get no table SELECT access. Why: column-level exposure control without per-column RLS.
 - private.is_membro excludes the 'cliente' role, so every internal-table policy keeps clients out automatically. Why: one choke point for internal vs. client access.
+- Chamados (tickets) are the one exception to RPC-only portal reads: clients read chamados/chamado_mensagens/chamado_anexos directly, and RLS hides interna=true messages from them. Why: conversation data is client-owned; internal-note secrecy is enforced in the database, not the UI.
+- Team visibility of chamados goes through private.equipe_ve_projeto (admin sees all; others only projects where they are projetos.responsavel_id, or projects without one). Why: tickets route to the project owner.

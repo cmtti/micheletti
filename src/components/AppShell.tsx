@@ -9,7 +9,10 @@ import {
   FileText,
   Settings,
   LogOut,
+  LifeBuoy,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchChamados } from "@/lib/chamados";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,6 +47,8 @@ export function AppShell({
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
   const { roles, profile } = useMyRoles(user?.id);
+  const { data: chamados = [] } = useQuery({ queryKey: ["chamados"], queryFn: () => fetchChamados() });
+  const abertos = chamados.filter((c) => c.status === "aberto").length;
 
   async function sair() {
     await queryClient.cancelQueries();
@@ -76,6 +81,9 @@ export function AppShell({
             >
               <Icon className="h-4 w-4" />
               {label}
+              {to === "/chamados" && abertos > 0 && (
+                <span className="ml-auto rounded-full bg-primary px-2 text-xs text-primary-foreground">{abertos}</span>
+              )}
             </Link>
           ))}
         </nav>
@@ -112,6 +120,7 @@ export function AppShell({
               activeProps={{ className: "bg-accent text-accent-foreground" }}
             >
               {label}
+              {to === "/chamados" && abertos > 0 ? ` (${abertos})` : ""}
             </Link>
           ))}
         </div>

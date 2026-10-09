@@ -180,6 +180,8 @@ function ProjetoForm({
   const [tipo, setTipo] = useState(projeto?.tipo ?? TIPOS_PROJETO[0]);
   const [status, setStatus] = useState<ProjetoStatus>(projeto?.status ?? "ativo");
   const [descricao, setDescricao] = useState(projeto?.descricao ?? "");
+  const { data: profiles = [] } = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
+  const [responsavel, setResponsavel] = useState(projeto?.responsavel_id ?? "nenhum");
   const [prazo, setPrazo] = useState(projeto?.prazo_entrega ?? "");
   const [valorContrato, setValorContrato] = useState(
     projeto?.valor_contrato != null ? String(projeto.valor_contrato) : "",
@@ -194,6 +196,7 @@ function ProjetoForm({
       status,
       descricao: descricao || null,
       prazo_entrega: prazo || null,
+      responsavel_id: responsavel === "nenhum" ? null : responsavel,
       valor_contrato: valorContrato ? Number(valorContrato.replace(/\./g, "").replace(",", ".")) : null,
     };
     try {
@@ -260,6 +263,22 @@ function ProjetoForm({
             onChange={(e) => setValorContrato(e.target.value)}
           />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Responsável (recebe os chamados do cliente)</Label>
+        <Select value={responsavel} onValueChange={setResponsavel}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="nenhum">Sem responsável (toda a equipe vê)</SelectItem>
+            {profiles.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label>Descrição</Label>
