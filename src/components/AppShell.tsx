@@ -21,6 +21,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/kanban", label: "Quadro Kanban", icon: KanbanSquare },
   { to: "/projetos", label: "Projetos", icon: FolderKanban },
+  { to: "/chamados", label: "Chamados", icon: LifeBuoy },
   { to: "/orcamentos", label: "Orçamentos", icon: FileText },
   { to: "/clientes", label: "Clientes", icon: Contact },
   { to: "/usuarios", label: "Usuários", icon: Users },

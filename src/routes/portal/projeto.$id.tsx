@@ -9,6 +9,46 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ETAPAS_CLIENTE, dataBR } from "@/lib/api";
 import { exigirCliente, fetchPortalProjeto, type PortalArquivo } from "@/lib/portal";
+import { CATEGORIA_LABEL, fetchChamados } from "@/lib/chamados";
+import { NovoChamadoDialog } from "@/components/chamados/NovoChamadoDialog";
+import { StatusChamadoBadge } from "@/components/chamados/ChamadoConversa";
+
+function ChamadosSection({ projetoId }: { projetoId: string }) {
+  const { data: chamados = [] } = useQuery({
+    queryKey: ["chamados", projetoId],
+    queryFn: () => fetchChamados(projetoId),
+  });
+  return (
+    <section className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Chamados</h2>
+        <NovoChamadoDialog projetoId={projetoId} />
+      </div>
+      <ul className="mt-2 divide-y divide-border">
+        {chamados.map((c) => (
+          <li key={c.id}>
+            <Link
+              to="/portal/chamado/$id"
+              params={{ id: c.id }}
+              className="flex items-center justify-between gap-3 py-2.5 hover:opacity-80"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{c.titulo}</p>
+                <p className="text-xs text-muted-foreground">
+                  {CATEGORIA_LABEL[c.categoria]} · {dataBR(c.created_at)}
+                </p>
+              </div>
+              <StatusChamadoBadge status={c.status} />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {chamados.length === 0 && (
+        <p className="mt-2 text-sm text-muted-foreground">Nenhum chamado aberto.</p>
+      )}
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/portal/projeto/$id")({
   ssr: false,
@@ -144,6 +184,8 @@ function PortalProjetoPage() {
           <p className="mt-2 text-sm text-muted-foreground">Nenhum arquivo disponível ainda.</p>
         )}
       </section>
+
+      <ChamadosSection projetoId={p.id} />
     </PortalShell>
   );
 }
